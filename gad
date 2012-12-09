@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Copyright (c) 2012 Brian P. Curran <brianpcurran@gmail.com>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+while [ $# ]; do
+  case "$1" in
+    -a) apikey="$2"; shift;;
+    -d) domain="$2"; shift;;
+    *) break;;
+  esac
+  shift
+done
+if [ -z "$apikey" -o -z "$domain" ]; then
+  echo >&2 "usage: $0 -a APIKEY -d example.com"; exit 2
+fi
+
+# ext_if should be changed to the name of your external network interface
+ext_if=""
+gandi="rpc.gandi.net:443"
+ns_ip=`nslookup "$domain" a.dns.gandi.net | sed -n 's/^Address: \(.*\)/\1/p'`
+ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
+
+rpc() {
+  temp_xml=`mktemp`
+  temp_post=`mktemp`
+  echo "<?xml version=\"1.0\"?>
+<methodCall>
+  <methodName>"$1"</methodName>
+  <params>
+    <param>
+      <value><string>$apikey</string></value>
+    </param>" > $temp_xml
+  shift
+  while [ ! -z "$1" ]; do
+    if [ "$1" != "struct" ]; then
+      echo "    <param>
+      <value><"$1">"$2"</"$1"></value>
+    </param>" >> $temp_xml
+    shift; shift
+    else 
+      echo "    <param>
+      <value>
+        <struct>" >> $temp_xml
+          while [ ! -z "$1" ]; do
+            echo "          <member>
+            <name>"$2"</name>
+            <value>"$3"</value>
+          </member>" >> $temp_xml
+            shift; shift; shift
+          done
+        echo "        </struct>
+      </value>
+    </param>" >> $temp_xml
+    fi
+  done
+  echo "  </params>
+</methodCall>" >> $temp_xml
+  echo "POST /xmlrpc/ HTTP/1.0
+User-Agent: Gandi Automatic DNS shell script/0.1
+Host: "$gandi"
+Content-Type: text/xml
+Content-Length: `cat "$temp_xml" | wc -c`
+" > $temp_post
+  cat $temp_xml >> $temp_post
+  cat "$temp_post" | openssl s_client -quiet -connect "$gandi"
+  rm $temp_xml
+  rm $temp_post
+}
+
+if [ $ext_ip != $ns_ip ]; then
+  zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+  rpc "domain.zone.record.delete" "int" "$zone_id" "int" "$new_version_id" "struct" "type" "A" > /dev/null 2>&1
+  rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "@" "struct" "type" "A" "struct" "value" "$ext_ip" > /dev/null 2>&1
+  rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id" > /dev/null 2>&1
+  echo "Tried to update the @ A record from "$ns_ip" to "$ext_ip". There's no error checking on the RPCs so check the web interface if you want to be sure the update was successful."
+  exit 0
+else
+  echo "The @ A record appears to be up to date."
+  exit 1
+fi
