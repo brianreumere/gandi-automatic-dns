@@ -65,7 +65,6 @@ fi
 rpc() {
   temp_xml=`mktemp`
   temp_post=`mktemp`
-  temp_result=`mktemp`
   echo "<?xml version=\"1.0\"?>
 <methodCall>
   <methodName>"$1"</methodName>
@@ -113,7 +112,6 @@ Content-Length: `cat "$temp_xml" | wc -c`
   cat "$temp_post" | openssl s_client -quiet -connect "$gandi"
   rm "$temp_xml"
   rm "$temp_post"
-  exit
 }
 
 update() {
