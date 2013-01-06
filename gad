@@ -46,7 +46,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ] || [ -z "$ext_if" -a -z "$nat" ]; then
-  usage; exit 1
+  usage
 fi
 
 gandi="rpc.gandi.net:443"
