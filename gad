@@ -1,6 +1,8 @@
 #!/bin/sh
 
-# Copyright (c) 2012 Brian P. Curran <brianpcurran@gmail.com>
+# Gandi Automatic DNS 0.1
+
+# Copyright (c) 2012, 2013 Brian P. Curran <brianpcurran@gmail.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -14,23 +16,50 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-while [ $# ]; do
+usage() {
+  echo "
+Usage: $0 [-f] [-t] -n|-i EXT_IF -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+
+EXT_IF: The name of your external network interface
+APIKEY: Your API key provided by Gandi
+EXAMPLE.COM: The domain name whose active zonefile will be updated
+RECORD-NAMES: A space-separated list of the names of the A records to update or create
+
+-f: Force an update regardless of IP address discrepancy
+-t: Only create the new version file; don't activate it
+-n: Use OpenDNS to obtain the external IP address
+"
+  exit 1
+}
+
+while [ $# -gt 0 ]; do
   case "$1" in
+    -f) force="yes";;
+    -t) testing="yes";;
+    -n) nat="yes";;
+    -i) ext_if="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
-    *) break;;
+    -r) records="$2"; shift;;
+    *) usage; break
   esac
   shift
 done
-if [ -z "$apikey" -o -z "$domain" ]; then
-  echo >&2 "usage: $0 -a APIKEY -d example.com"; exit 2
+if [ -z "$apikey" -o -z "$domain" -o -z "$records" ] || [ -z "$ext_if" -a -z "$nat" ]; then
+  usage; exit 1
 fi
 
-# ext_if should be changed to the name of your external network interface
-ext_if=""
 gandi="rpc.gandi.net:443"
-ns_ip=`nslookup "$domain" a.dns.gandi.net | sed -n 's/^Address: \(.*\)/\1/p'`
-ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
+case "$records" in
+  *@*) dns="$domain";;
+  *) subdomain=`echo $records | awk '{print $1}'`; dns="$subdomain.$domain"
+esac
+ns_ip=`dig +short @a.dns.gandi.net "$dns"`
+if [ "$nat" = "yes" ]; then
+  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
+else
+  ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
+fi
 
 rpc() {
   temp_xml=`mktemp`
@@ -40,7 +69,7 @@ rpc() {
   <methodName>"$1"</methodName>
   <params>
     <param>
-      <value><string>$apikey</string></value>
+      <value><string>"$apikey"</string></value>
     </param>" > $temp_xml
   shift
   while [ ! -z "$1" ]; do
@@ -49,18 +78,23 @@ rpc() {
       <value><"$1">"$2"</"$1"></value>
     </param>" >> $temp_xml
     shift; shift
-    else 
+    else
       echo "    <param>
       <value>
         <struct>" >> $temp_xml
-          while [ ! -z "$1" ]; do
-            echo "          <member>
-            <name>"$2"</name>
-            <value>"$3"</value>
+      shift;
+      while [ ! -z "$1" ]; do
+        if [ "$1" != "struct" ]; then
+          echo "          <member>
+            <name>"$1"</name>
+            <value><"$2">"$3"</"$2"></value>
           </member>" >> $temp_xml
-            shift; shift; shift
-          done
-        echo "        </struct>
+            shift; shift; shift;
+        else
+          break
+        fi
+      done
+      echo "        </struct>
       </value>
     </param>" >> $temp_xml
     fi
@@ -69,25 +103,37 @@ rpc() {
 </methodCall>" >> $temp_xml
   echo "POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.1
-Host: "$gandi"
+Host: GANDI
 Content-Type: text/xml
 Content-Length: `cat "$temp_xml" | wc -c`
-" > $temp_post
-  cat $temp_xml >> $temp_post
+" > "$temp_post"
+  cat "$temp_xml" >> "$temp_post"
   cat "$temp_post" | openssl s_client -quiet -connect "$gandi"
-  rm $temp_xml
-  rm $temp_post
+  rm "$temp_xml"
+  rm "$temp_post"
 }
 
-if [ $ext_ip != $ns_ip ]; then
+update() {
+  while [ ! -z "$1" ]; do
+    rpc "domain.zone.record.delete" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" > /dev/null 2>&1
+    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
+    shift
+  done    
+}
+
+if [ "$ext_ip" != "$ns_ip" -o "$force" = "yes" ]; then
   zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
   new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
-  rpc "domain.zone.record.delete" "int" "$zone_id" "int" "$new_version_id" "struct" "type" "A" > /dev/null 2>&1
-  rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "@" "struct" "type" "A" "struct" "value" "$ext_ip" > /dev/null 2>&1
-  rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id" > /dev/null 2>&1
-  echo "Tried to update the @ A record from "$ns_ip" to "$ext_ip". There's no error checking on the RPCs so check the web interface if you want to be sure the update was successful."
-  exit 0
+  update $records
+  if [ "$testing" != "yes" ]; then
+    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
+    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
+    echo "\nTried to update the following A records to "$ext_ip": "$records". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
+  else
+    echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
+  fi
+  exit
 else
-  echo "The @ A record appears to be up to date."
-  exit 1
+  # The specified A records appear to be up to date--or at least the first one is--so don't do anything
+  exit
 fi
