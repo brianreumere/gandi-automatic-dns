@@ -18,7 +18,7 @@
 
 usage() {
   echo "
-Usage: $0 [-f] [-t] -n|-i EXT_IF -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+Usage: $0 [-ftv] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
@@ -27,7 +27,8 @@ RECORD-NAMES: A space-separated list of the names of the A records to update or 
 
 -f: Force an update regardless of IP address discrepancy
 -t: Only create the new version file; don't activate it
--n: Use OpenDNS to obtain the external IP address
+-v: Print information to stdout even if a new zonefile isn't needed
+-i: Use ifconfig instead of OpenDNS to determine external IP address
 "
   exit 1
 }
@@ -36,7 +37,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -f) force="yes";;
     -t) testing="yes";;
-    -n) nat="yes";;
+    -v) verbose="yes";;
     -i) ext_if="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
@@ -45,7 +46,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-if [ -z "$apikey" -o -z "$domain" -o -z "$records" ] || [ -z "$ext_if" -a -z "$nat" ]; then
+if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
   usage
 fi
 
@@ -55,15 +56,16 @@ case "$records" in
   *) subdomain=`echo $records | awk '{print $1}'`; dns="$subdomain.$domain"
 esac
 ns_ip=`dig +short @a.dns.gandi.net "$dns"`
-if [ "$nat" = "yes" ]; then
-  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
-else
+if [ ! -z "$ext_if" ]; then
   ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1`
+else
+  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
 fi
 
 rpc() {
   temp_xml=`mktemp`
   temp_post=`mktemp`
+  temp_result=`mktemp`
   echo "<?xml version=\"1.0\"?>
 <methodCall>
   <methodName>"$1"</methodName>
@@ -111,6 +113,7 @@ Content-Length: `cat "$temp_xml" | wc -c`
   cat "$temp_post" | openssl s_client -quiet -connect "$gandi"
   rm "$temp_xml"
   rm "$temp_post"
+  exit
 }
 
 update() {
@@ -135,5 +138,16 @@ if [ "$ext_ip" != "$ns_ip" -o "$force" = "yes" ]; then
   exit
 else
   # The specified A records appear to be up to date--or at least the first one is--so don't do anything
+  if [ "$verbose" = "yes" ]; then
+    if [ ! -z "$ext_if" ]; then
+      ext_ip_method="ifconfig "$ext_if""
+    else
+      ext_ip_method="OpenDNS"
+    fi
+    echo "External IP address: "$ext_ip" detected with "$ext_ip_method"
+Nameserver IP address: "$ns_ip"
+
+No update needed. Exiting."
+  fi
   exit
 fi
