@@ -103,7 +103,7 @@ rpc() {
 </methodCall>" >> $temp_xml
   echo "POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.1
-Host: GANDI
+Host: "$gandi"
 Content-Type: text/xml
 Content-Length: `cat "$temp_xml" | wc -c`
 " > "$temp_post"
