@@ -18,7 +18,7 @@
 
 usage() {
   echo "
-Usage: $0 [-ftv] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+Usage: $0 [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
