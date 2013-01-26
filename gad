@@ -20,15 +20,15 @@ usage() {
   echo "
 Usage: $0 [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
-EXT_IF: The name of your external network interface
-APIKEY: Your API key provided by Gandi
-EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the names of the A records to update or create
-
 -f: Force an update regardless of IP address discrepancy
 -t: Only create the new version file; don't activate it
 -v: Print information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+
+EXT_IF: The name of your external network interface
+APIKEY: Your API key provided by Gandi
+EXAMPLE.COM: The domain name whose active zonefile will be updated
+RECORD-NAMES: A space-separated list of the names of the A records to update or create
 "
   exit 1
 }
