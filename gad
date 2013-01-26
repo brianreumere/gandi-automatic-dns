@@ -51,16 +51,6 @@ if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
 fi
 
 gandi="rpc.gandi.net:443"
-case "$records" in
-  *@*) dns="$domain";;
-  *) subdomain=`echo $records | awk '{print $1}'`; dns="$subdomain.$domain"
-esac
-ns_ip=`dig +short @a.dns.gandi.net "$dns"`
-if [ ! -z "$ext_if" ]; then
-  ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1`
-else
-  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
-fi
 
 rpc() {
   temp_xml=`mktemp`
@@ -122,30 +112,48 @@ update() {
   done    
 }
 
-if [ "$ext_ip" != "$ns_ip" -o "$force" = "yes" ]; then
-  zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
-  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
-  update $records
+check() {
+  while [ ! -z "$1" ]; do
+    record_ip=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
+    if [ "$ext_ip" != "$record_ip" -o "$force" = "yes" ]; then
+      if [ -z "$records_to_update" ]; then
+        records_to_update="$1"
+      else
+        records_to_update="$records_to_update $1"
+      fi
+    fi
+    shift
+  done
+}
+
+if [ ! -z "$ext_if" ]; then
+  ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1`
+else
+  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
+fi
+
+zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+check "$records"
+
+if [ ! -z "$records_to_update" ]; then
+  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+  update "$records_to_update"
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    echo "\nTried to update the following A records to "$ext_ip": "$records". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
+    echo "\nTried to update the following A records to "$ext_ip": "$records_to_update". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
   exit
 else
-  # The specified A records appear to be up to date--or at least the first one is--so don't do anything
   if [ "$verbose" = "yes" ]; then
     if [ ! -z "$ext_if" ]; then
       ext_ip_method="ifconfig "$ext_if""
     else
       ext_ip_method="OpenDNS"
     fi
-    echo "External IP address: "$ext_ip" detected with "$ext_ip_method"
-Nameserver IP address: "$ns_ip"
-
-No update needed. Exiting."
+    echo "External IP address "$ext_ip" detected with "$ext_ip_method" matches records: "$records". No update needed. Exiting."
   fi
   exit
 fi
