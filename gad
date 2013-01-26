@@ -113,7 +113,7 @@ update() {
 
 check() {
   while [ ! -z "$1" ]; do
-    record=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 -e ">value<" -e ">id<"`
+    record=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 -e ">value<" -e ">id<"` > /dev/null 2>&1
     record_value=`echo "$record" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
     record_id=`echo "$record" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
     if [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
@@ -137,14 +137,14 @@ else
 fi
 
 # Get the active zonefile for the domain
-zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
 
 # Check values of records in the active version of the zonefile
 check $records
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" ]; then
-  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
   update $records_to_update
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
