@@ -127,15 +127,22 @@ check() {
   done
 }
 
+# Get correct IP address
 if [ ! -z "$ext_if" ]; then
+  ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1`
 else
+  ext_ip_method="OpenDNS"
   ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
 fi
 
+# Get the active zonefile for the domain
 zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+
+# Check values of records in the active version of the zonefile
 check $records
 
+# If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" ]; then
   new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
   update $records_to_update
@@ -149,11 +156,6 @@ if [ ! -z "$records_to_update" ]; then
   exit
 else
   if [ "$verbose" = "yes" ]; then
-    if [ ! -z "$ext_if" ]; then
-      ext_ip_method="ifconfig "$ext_if""
-    else
-      ext_ip_method="OpenDNS"
-    fi
     echo "External IP address "$ext_ip" detected with "$ext_ip_method" matches records: "$records". No update needed. Exiting."
   fi
   exit
