@@ -106,21 +106,20 @@ Content-Length: `cat "$temp_xml" | wc -c`
 
 update() {
   while [ ! -z "$1" ]; do
-    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$2" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
-    shift; shift
+    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
+    shift
   done    
 }
 
 check() {
   while [ ! -z "$1" ]; do
-    record=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 -e ">value<" -e ">id<"` > /dev/null 2>&1
-    record_value=`echo "$record" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'`
-    record_id=`echo "$record" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'` > /dev/null 2>&1
     if [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
       if [ -z "$records_to_update" ]; then
-        records_to_update="$1 $record_id"
+        records_to_update="$1"
       else
-        records_to_update="$records_to_update $1 $record_id"
+        records_to_update="$records_to_update $1"
       fi
     fi
     shift
