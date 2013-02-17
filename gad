@@ -21,8 +21,8 @@ usage() {
 Usage: $0 [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -f: Force an update regardless of IP address discrepancy
--t: Only create the new version file; don't activate it
--v: Print information to stdout even if a new zonefile isn't needed
+-t: Create a new version of the zonefile but don't activate it
+-v: Print some information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
 EXT_IF: The name of your external network interface
