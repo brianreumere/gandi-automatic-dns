@@ -112,10 +112,23 @@ update() {
   done    
 }
 
+create() {
+  while [ ! -z "$1" ]; do
+    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
+    shift
+  done
+}
+
 check() {
   while [ ! -z "$1" ]; do
     record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'` > /dev/null 2>&1
-    if [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
+    if [ -z "$record_value" ]; then
+      if [ -z "$records_to_create" ]; then
+        records_to_create="$1"
+      else
+        records_to_create="$records_to_create $1"
+      fi
+    elif [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
       if [ -z "$records_to_update" ]; then
         records_to_update="$1"
       else
@@ -142,9 +155,10 @@ zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*
 check $records
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
-if [ ! -z "$records_to_update" ]; then
+if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
   update $records_to_update
+  create $records_to_create
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
