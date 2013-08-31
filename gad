@@ -106,7 +106,7 @@ Content-Length: `cat "$temp_xml" | wc -c`
 
 update() {
   while [ ! -z "$1" ]; do
-    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
     rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
     shift
   done    
