@@ -121,8 +121,12 @@ create() {
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -m 1 -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'` > /dev/null 2>&1
-    if [ -z "$record_value" ]; then
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'` > /dev/null 2>&1
+    record_count=`echo "$record_value" | wc -w`
+    if [ "$record_count" -gt "1" ]; then
+      echo "Sorry, but gad does not support updating multiple records with the same name."
+      exit 1
+    elif [ -z "$record_value" ]; then
       if [ -z "$records_to_create" ]; then
         records_to_create="$1"
       else
