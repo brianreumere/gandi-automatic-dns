@@ -36,7 +36,9 @@ Request an API key from Gandi [here] [4].
 rpc() syntax
 ============
 
+```
 rpc "methodName" "datatype" "value" "struct" "name" "datatype" "value"
+```
 
 This function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation] [5]. Note that the APIKEY value from the command line is automatically included as the first parameter.
 
