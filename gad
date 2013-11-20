@@ -170,7 +170,8 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    echo "\nTried to update the following A records to "$ext_ip": "$records_to_update". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
+    records_touched=`echo "$records_to_update" "$records_to_create"`
+    echo "\nTried to update the following A records to "$ext_ip": "$records_touched". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
