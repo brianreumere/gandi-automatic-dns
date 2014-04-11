@@ -53,8 +53,8 @@ fi
 gandi="rpc.gandi.net:443"
 
 rpc() {
-  temp_xml=`mktemp`
-  temp_post=`mktemp`
+  temp_xml=`mktemp gadxml.XXXXX`
+  temp_post=`mktemp gadpost.XXXXX`
   echo "<?xml version=\"1.0\"?>
 <methodCall>
   <methodName>"$1"</methodName>
@@ -109,7 +109,7 @@ update() {
     new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
     rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
     shift
-  done    
+  done
 }
 
 create() {
