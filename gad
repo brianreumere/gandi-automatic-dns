@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 0.1
+# Gandi Automatic DNS 0.2
 
 # Copyright (c) 2012, 2013 ***REMOVED***
 #
@@ -53,55 +53,59 @@ fi
 gandi="rpc.gandi.net:443"
 
 rpc() {
-  temp_xml=`mktemp`
-  temp_post=`mktemp`
-  echo "<?xml version=\"1.0\"?>
+  tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
   <methodName>"$1"</methodName>
   <params>
     <param>
       <value><string>"$apikey"</string></value>
-    </param>" > $temp_xml
+    </param>"
   shift
   while [ ! -z "$1" ]; do
     if [ "$1" != "struct" ]; then
-      echo "    <param>
+      tmp_xml="$tmp_xml
+    <param>
       <value><"$1">"$2"</"$1"></value>
-    </param>" >> $temp_xml
+    </param>"
     shift; shift
     else
-      echo "    <param>
+      tmp_xml="$tmp_xml
+    <param>
       <value>
-        <struct>" >> $temp_xml
+        <struct>"
       shift;
       while [ ! -z "$1" ]; do
         if [ "$1" != "struct" ]; then
-          echo "          <member>
+          tmp_xml="$tmp_xml
+          <member>
             <name>"$1"</name>
             <value><"$2">"$3"</"$2"></value>
-          </member>" >> $temp_xml
+          </member>"
             shift; shift; shift;
         else
           break
         fi
       done
-      echo "        </struct>
+      tmp_xml="$tmp_xml
+        </struct>
       </value>
-    </param>" >> $temp_xml
+    </param>"
     fi
   done
-  echo "  </params>
-</methodCall>" >> $temp_xml
-  echo "POST /xmlrpc/ HTTP/1.0
+  tmp_xml="$tmp_xml
+  </params>
+</methodCall>"
+  tmp_post="POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.1
 Host: "$gandi"
 Content-Type: text/xml
-Content-Length: `cat "$temp_xml" | wc -c`
-" > "$temp_post"
-  cat "$temp_xml" >> "$temp_post"
-  cat "$temp_post" | openssl s_client -quiet -connect "$gandi"
-  rm "$temp_xml"
-  rm "$temp_post"
+Content-Length:`echo "$tmp_xml" | wc -c`
+
+"
+  tmp_post=$tmp_post$tmp_xml 
+  echo "$tmp_post" | openssl s_client -quiet -connect "$gandi"
+  unset tmp_xml
+  unset tmp_post
 }
 
 update() {
@@ -168,10 +172,9 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   update $records_to_update
   create $records_to_create
   if [ "$testing" != "yes" ]; then
-    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n"
-    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    records_touched=`echo "$records_to_update" "$records_to_create"`
-    echo "\nTried to update the following A records to "$ext_ip": "$records_touched". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
+    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"..."
+    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id" > /dev/null 2>&1
+    echo "Tried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
