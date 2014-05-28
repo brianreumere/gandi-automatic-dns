@@ -102,7 +102,7 @@ Content-Type: text/xml
 Content-Length:`echo "$tmp_xml" | wc -c`
 
 "
-  tmp_post=$tmp_post$tmp_xml 
+  tmp_post="$tmp_post$tmp_xml"
   echo "$tmp_post" | openssl s_client -quiet -connect "$gandi"
   unset tmp_xml
   unset tmp_post
@@ -173,8 +173,8 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   create $records_to_create
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"..."
-    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id" > /dev/null 2>&1
-    echo "Tried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create". There is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set()."
+    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
+     echo "Tried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create"\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
