@@ -96,7 +96,7 @@ rpc() {
   </params>
 </methodCall>"
   tmp_post="POST /xmlrpc/ HTTP/1.0
-User-Agent: Gandi Automatic DNS shell script/0.1
+User-Agent: Gandi Automatic DNS shell script/0.2
 Host: "$gandi"
 Content-Type: text/xml
 Content-Length:`echo "$tmp_xml" | wc -c`
