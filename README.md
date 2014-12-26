@@ -1,7 +1,7 @@
 gad
 ===
 
-This script is intended to be used as a cron job to maintain the accuracy of multiple A records in Gandi.net zonefiles. External IP address discovery is done via a network interface (works on BSD, untested on anything else) or [OpenDNS] [1]. This is compared to the value in the active version of the zonefile of each record in RECORD-NAMES. Using the rpc() function to update different types of DNS records or call other methods of Gandi's XML-RPC API should be fairly trivial.
+This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in Gandi.net zonefiles. External IP address discovery is done via a network interface (works on OpenBSD and Linux with net-tools 1.60-23, untested on anything else) or [OpenDNS] [1]. This is compared to the value in the active version of the zonefile of each record in RECORD-NAMES. Using the rpc() function to update different types of DNS records or call other methods of Gandi's XML-RPC API should be fairly trivial.
 
 Prerequisites
 =============
@@ -18,13 +18,16 @@ Command line usage
 ==================
 
 ```
-$ gad [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
+-6: Update AAAA record instead of A record
 -f: Force an update regardless of IP address discrepancy
 -t: Create a new version of the zonefile but don't activate it
 -v: Print some information to stdout even if a new zonefile isn't needed
+-c: Verify Gandi certificates using certificates in this directory
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
+CA_PATH: Directory where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
