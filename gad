@@ -18,12 +18,13 @@
 
 usage() {
   echo "
-Usage: $0 [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+Usage: $0 [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -f: Force an update regardless of IP address discrepancy
 -t: Create a new version of the zonefile but don't activate it
 -v: Print some information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+-c: Verify Gandi certificates using certificates in this directory
 
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
@@ -38,6 +39,7 @@ while [ $# -gt 0 ]; do
     -f) force="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
+    -c) capath="$2"; shift;;
     -i) ext_if="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
@@ -103,7 +105,12 @@ Content-Length:`echo "$tmp_xml" | wc -c`
 
 "
   tmp_post="$tmp_post$tmp_xml"
-  echo "$tmp_post" | openssl s_client -quiet -connect "$gandi"
+  echo
+  if [ ! -z "$capath" ]; then
+    echo "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi"
+  else
+    echo "$tmp_post" | openssl s_client -quiet -connect "$gandi"
+  fi
   unset tmp_xml
   unset tmp_post
 }
@@ -172,9 +179,9 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   update $records_to_update
   create $records_to_create
   if [ "$testing" != "yes" ]; then
-    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"..."
+    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n\nopenssl s_client output and domain.zone.version.set() method response:"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    echo "Tried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create"\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
+    echo "\nTried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create"\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
