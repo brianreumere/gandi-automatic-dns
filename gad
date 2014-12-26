@@ -57,9 +57,11 @@ fi
 if [ "$ipv6" == "yes" ]; then
   record_type="AAAA"
   ip_regex="\([0-9A-Fa-f:]*\).*"
+  inet="inet6"
 else
   record_type="A"
   ip_regex="\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*"
+  inet="inet"
 fi
 
 gandi="rpc.gandi.net:443"
@@ -167,10 +169,10 @@ check() {
 # Get correct IP address
 if [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
-  ext_ip=`ifconfig "$ext_if" | sed -n "s/.*inet "$ip_regex"/\1/p" | head -1`
+  ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex"/\2/p" | head -1`
 else
   ext_ip_method="OpenDNS"
-  ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
+  ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
 fi
 if [ -z "$ext_ip" ]; then
   echo "Failed to determine external IP address with "$ext_ip_method". See above error."
