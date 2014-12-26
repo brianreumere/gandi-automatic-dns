@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 0.2
+# Gandi Automatic DNS 0.3
 
 # Copyright (c) 2012, 2013 ***REMOVED***
 #
@@ -110,7 +110,7 @@ rpc() {
   </params>
 </methodCall>"
   tmp_post="POST /xmlrpc/ HTTP/1.0
-User-Agent: Gandi Automatic DNS shell script/0.2
+User-Agent: Gandi Automatic DNS shell script/0.3
 Host: "$gandi"
 Content-Type: text/xml
 Content-Length:`echo "$tmp_xml" | wc -c`
