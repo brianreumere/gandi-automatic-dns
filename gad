@@ -18,14 +18,16 @@
 
 usage() {
   echo "
-Usage: $0 [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+Usage: $0 [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
+-6: Update AAAA record instead of A record
 -f: Force an update regardless of IP address discrepancy
 -t: Create a new version of the zonefile but don't activate it
 -v: Print some information to stdout even if a new zonefile isn't needed
--i: Use ifconfig instead of OpenDNS to determine external IP address
 -c: Verify Gandi certificates using certificates in this directory
+-i: Use ifconfig instead of OpenDNS to determine external IP address
 
+CA_PATH: Directory where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
@@ -36,6 +38,7 @@ RECORD-NAMES: A space-separated list of the names of the A records to update or 
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    -6) ipv6="yes";;
     -f) force="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
@@ -50,6 +53,13 @@ while [ $# -gt 0 ]; do
 done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
   usage
+fi
+if [ "$ipv6" == "yes" ]; then
+  record_type="AAAA"
+  ip_regex="s/.*<string>\([0-9A-Fa-f:]*\).*/\1/p"
+else
+  record_type="A"
+  ip_regex="s/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p"
 fi
 
 gandi="rpc.gandi.net:443"
@@ -117,22 +127,22 @@ Content-Length:`echo "$tmp_xml" | wc -c`
 
 update() {
   while [ ! -z "$1" ]; do
-    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
-    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
+    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip" > /dev/null 2>&1
     shift
   done    
 }
 
 create() {
   while [ ! -z "$1" ]; do
-    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "A" "value" "string" "$ext_ip" > /dev/null 2>&1
+    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip" > /dev/null 2>&1
     shift
   done
 }
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n 's/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p'` > /dev/null 2>&1
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n "$ip_regex"` > /dev/null 2>&1
     record_count=`echo "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
       echo "Sorry, but gad does not support updating multiple records with the same name."
@@ -157,7 +167,7 @@ check() {
 # Get correct IP address
 if [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
-  ext_ip=`ifconfig "$ext_if" | sed -n 's/.*inet \([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' | head -1`
+  ext_ip=`ifconfig "$ext_if" | sed -n "$ip_regex" | head -1`
 else
   ext_ip_method="OpenDNS"
   ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
@@ -181,7 +191,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   if [ "$testing" != "yes" ]; then
     echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n\nopenssl s_client output and domain.zone.version.set() method response:"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    echo "\nTried to update the following A records to "$ext_ip": "$records_to_update" "$records_to_create"\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
+    echo "\nTried to update the following "$record_type" records to "$ext_ip": "$records_to_update" "$records_to_create"\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
   else
     echo "Created a new version of the current zonefile but did not activate it. Check the web interface."
   fi
