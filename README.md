@@ -31,7 +31,7 @@ CA_PATH: Directory where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the names of the A records to update or create
+RECORD-NAMES: A space-separated list of the names of the A or AAAA records to update or create
 ```
 
 Request an API key from Gandi [here] [4].
