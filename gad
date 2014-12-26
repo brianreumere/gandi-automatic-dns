@@ -56,10 +56,10 @@ if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
 fi
 if [ "$ipv6" == "yes" ]; then
   record_type="AAAA"
-  ip_regex="s/.*<string>\([0-9A-Fa-f:]*\).*/\1/p"
+  ip_regex="\([0-9A-Fa-f:]*\).*"
 else
   record_type="A"
-  ip_regex="s/.*<string>\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p"
+  ip_regex="\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*"
 fi
 
 gandi="rpc.gandi.net:443"
@@ -142,7 +142,7 @@ create() {
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n "$ip_regex"` > /dev/null 2>&1
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex"/\1/p"` > /dev/null 2>&1
     record_count=`echo "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
       echo "Sorry, but gad does not support updating multiple records with the same name."
@@ -167,7 +167,7 @@ check() {
 # Get correct IP address
 if [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
-  ext_ip=`ifconfig "$ext_if" | sed -n "$ip_regex" | head -1`
+  ext_ip=`ifconfig "$ext_if" | sed -n "s/.*inet "$ip_regex"/\1/p" | head -1`
 else
   ext_ip_method="OpenDNS"
   ext_ip=`dig +short @resolver1.opendns.com myip.opendns.com`
