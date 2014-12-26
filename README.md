@@ -18,7 +18,7 @@ Command line usage
 ==================
 
 ```
-$ gad [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+$ gad [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
