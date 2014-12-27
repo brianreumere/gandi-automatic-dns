@@ -23,7 +23,7 @@ usage() {
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
--c: Verify Gandi SSL certificate using certificates in this directory
+-c: Verify Gandi SSL certificate
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
 CA_PATH: Directory where CA certificates are stored
@@ -144,7 +144,7 @@ check() {
     record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex"/\1/p"` > /dev/null 2>&1
     record_count=`printf "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
-      printf "Sorry, but gad does not support updating multiple records with the same name."
+      printf "Sorry, but gad does not support updating multiple records with the same name.\n"
       exit 1
     elif [ -z "$record_value" ]; then
       if [ -z "$records_to_create" ]; then
