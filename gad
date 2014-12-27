@@ -17,8 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  echo "
-Usage: $0 [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+  printf "\nUsage: $0 [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
@@ -31,8 +30,7 @@ CA_PATH: Directory where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
-"
+RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n"
   exit 1
 }
 
@@ -113,15 +111,14 @@ rpc() {
 User-Agent: Gandi Automatic DNS shell script/0.3
 Host: "$gandi"
 Content-Type: text/xml
-Content-Length:`echo "$tmp_xml" | wc -c`
+Content-Length:`printf "$tmp_xml" | wc -c`
 
 "
   tmp_post="$tmp_post$tmp_xml"
-  echo
   if [ ! -z "$capath" ]; then
-    echo "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi"
+    printf "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi"
   else
-    echo "$tmp_post" | openssl s_client -quiet -connect "$gandi"
+    printf "$tmp_post" | openssl s_client -quiet -connect "$gandi"
   fi
   unset tmp_xml
   unset tmp_post
@@ -145,9 +142,9 @@ create() {
 check() {
   while [ ! -z "$1" ]; do
     record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex"/\1/p"` > /dev/null 2>&1
-    record_count=`echo "$record_value" | wc -w`
+    record_count=`printf "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
-      echo "Sorry, but gad does not support updating multiple records with the same name."
+      printf "Sorry, but gad does not support updating multiple records with the same name."
       exit 1
     elif [ -z "$record_value" ]; then
       if [ -z "$records_to_create" ]; then
@@ -175,7 +172,7 @@ else
   ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
 fi
 if [ -z "$ext_ip" ]; then
-  echo "Failed to determine external IP address with "$ext_ip_method". See above error."
+  printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
   exit 1
 fi
 
@@ -191,16 +188,16 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   update $records_to_update
   create $records_to_create
   if [ "$testing" != "yes" ]; then
-    echo "Activating version "$new_version_id" of the zonefile for domain "$domain"...\n\nopenssl s_client output and domain.zone.version.set() method response:"
+    printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    echo "\nTried to update the following "$record_type" records to "$ext_ip": "$records_to_update" "$records_to_create"\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() (a response of "1" means success)."
+    printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
   else
-    echo "Created version "$new_version_id" of the zonefile for domain "$domain".\n\nTried to update the following "$record_type" records to "$ext_ip": "$records_to_update" "$records_to_create"\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful."
+    printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
   fi
   exit
 else
   if [ "$verbose" = "yes" ]; then
-    echo "External IP address "$ext_ip" detected with "$ext_ip_method" matches records: "$records". No update needed. Exiting."
+    printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting." "$ext_ip" "$ext_ip_method" "$records"
   fi
   exit
 fi
