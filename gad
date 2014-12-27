@@ -141,7 +141,7 @@ create() {
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex"/\1/p"` > /dev/null 2>&1
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_id" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex"/\1/p"` > /dev/null 2>&1
     record_count=`printf "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
       printf "Sorry, but gad does not support updating multiple records with the same name."
