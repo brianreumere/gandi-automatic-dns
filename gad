@@ -116,11 +116,11 @@ Content-Length:`printf "$tmp_xml" | wc -c`
 "
   tmp_post="$tmp_post$tmp_xml"
   if [ -d "$capath" ]; then
-    printf "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi"
+    printf "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi" 2> /dev/null
   elif [ -f "$capath" ]; then
-    printf "$tmp_post" | openssl s_client -CAfile "$capath" -quiet -connect "$gandi"
+    printf "$tmp_post" | openssl s_client -CAfile "$capath" -quiet -connect "$gandi" 2> /dev/null
   else
-    printf "$tmp_post" | openssl s_client -quiet -connect "$gandi"
+    printf "$tmp_post" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
   fi
   unset tmp_xml
   unset tmp_post
