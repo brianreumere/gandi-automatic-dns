@@ -26,7 +26,7 @@ usage() {
 -c: Verify Gandi SSL certificate
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
-CA_PATH: Directory where CA certificates are stored
+CA_PATH: Directory or filename where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
@@ -115,8 +115,10 @@ Content-Length:`printf "$tmp_xml" | wc -c`
 
 "
   tmp_post="$tmp_post$tmp_xml"
-  if [ ! -z "$capath" ]; then
+  if [ -d "$capath" ]; then
     printf "$tmp_post" | openssl s_client -CApath "$capath" -quiet -connect "$gandi"
+  elif [ -f "$capath" ]; then
+    printf "$tmp_post" | openssl s_client -CAfile "$capath" -quiet -connect "$gandi"
   else
     printf "$tmp_post" | openssl s_client -quiet -connect "$gandi"
   fi
