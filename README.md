@@ -18,16 +18,14 @@ Command line usage
 ==================
 
 ```
-$ gad [-6] [-f] [-t] [-v] [-c CA_PATH] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-6] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
--c: Verify Gandi SSL certificate
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
-CA_PATH: Directory or filename where CA certificates are stored
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
