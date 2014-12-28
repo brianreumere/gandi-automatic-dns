@@ -12,7 +12,7 @@ Requirements
 ============
 
   * Bourne shell
-  * OpenSSL
+  * OpenSSL or [LibreSSL] [4]
 
 Command line usage
 ==================
@@ -32,7 +32,7 @@ EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
 ```
 
-Request an API key from Gandi [here] [4].
+Request an API key from Gandi [here] [5].
 
 rpc() syntax
 ============
@@ -41,10 +41,11 @@ rpc() syntax
 rpc "methodName" "datatype" "value" "struct" "name" "datatype" "value"
 ```
 
-This function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation] [5]. Note that the APIKEY value from the command line is automatically included as the first parameter.
+This function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation] [6]. Note that the APIKEY value from the command line is automatically included as the first parameter.
 
   [1]: http://www.opendns.com
   [2]: http://wiki.gandi.net/en/dns/zone/edit
   [3]: http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file
-  [4]: https://www.gandi.net/admin/apixml/
-  [5]: http://doc.rpc.gandi.net/index.html
+  [4]: http://www.libressl.org/
+  [5]: https://www.gandi.net/admin/apixml/
+  [6]: http://doc.rpc.gandi.net/index.html
