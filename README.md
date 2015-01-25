@@ -18,9 +18,10 @@ Command line usage
 ==================
 
 ```
-$ gad [-6] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-6] [-e] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -6: Update AAAA record(s) instead of A record(s)
+-e: Print debugging information
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
