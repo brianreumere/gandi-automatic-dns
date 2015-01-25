@@ -17,9 +17,10 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  printf "\nUsage: $0 [-6] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+  printf "\nUsage: $0 [-6] [-d] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -6: Update AAAA record(s) instead of A record(s)
+-e: Print debugging information to stdout
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
@@ -35,6 +36,7 @@ RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) t
 while [ $# -gt 0 ]; do
   case "$1" in
     -6) ipv6="yes";;
+    -e) debug="yes";;
     -f) force="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
@@ -59,9 +61,16 @@ else
   inet="inet"
 fi
 
+if [ "$debug" == "yes" ]; then
+  printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+fi
+
 gandi="rpc.gandi.net:443"
 
 rpc() {
+  if [ "$debug" == "yes" ]; then
+    printf "RPC call to methodName = %s\n\n" "$1" 1>&2
+  fi
   tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
   <methodName>"$1"</methodName>
@@ -108,33 +117,40 @@ rpc() {
 User-Agent: Gandi Automatic DNS shell script/0.3
 Host: "$gandi"
 Content-Type: text/xml
-Content-Length:`printf "$tmp_xml" | wc -c`
+Content-Length: `printf "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 "
-  tmp_post="$tmp_post$tmp_xml"
-  printf "$tmp_post" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
+  tmp_message="$tmp_post$tmp_xml"
+  printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
+  if [ "$debug" == "yes" ]; then
+    printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
+  fi
   unset tmp_xml
   unset tmp_post
+  unset tmp_message
 }
 
 update() {
   while [ ! -z "$1" ]; do
-    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
-    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip" > /dev/null 2>&1
+    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+    if [ "$debug" == "yes" ]; then
+      printf "new_record_id = %s\n\n" "$new_record_id"
+    fi
+    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
     shift
   done    
 }
 
 create() {
   while [ ! -z "$1" ]; do
-    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip" > /dev/null 2>&1
+    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
     shift
   done
 }
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"` > /dev/null 2>&1
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
     record_count=`printf "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
       printf "Sorry, but gad does not support updating multiple records with the same name.\n"
@@ -152,6 +168,9 @@ check() {
         records_to_update="$records_to_update $1"
       fi
     fi
+    if [ "$debug" == "yes" ]; then
+      printf "record = %s\nrecord_value = %s\nrecords_to_create = %s\nrecords_to_update = %s\n\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
+    fi
     shift
   done
 }
@@ -168,16 +187,25 @@ if [ -z "$ext_ip" ]; then
   printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
   exit 1
 fi
+if [ "$debug" == "yes" ]; then
+  printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
+fi
 
 # Get the active zonefile for the domain
-zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+if [ "$debug" == "yes" ]; then
+  printf "zone_id = %s\n\n" "$zone_id"
+fi
 
 # Check values of records in the active version of the zonefile
 check $records
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
-  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'` > /dev/null 2>&1
+  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+  if [ "$debug" == "yes" ]; then
+    printf "new_version_id = %s\n\n" "$new_version_id"
+  fi
   update $records_to_update
   create $records_to_create
   if [ "$testing" != "yes" ]; then
