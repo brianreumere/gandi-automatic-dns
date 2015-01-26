@@ -121,10 +121,10 @@ Content-Length: `printf "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 "
   tmp_message="$tmp_post$tmp_xml"
-  printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
   if [ "$debug" == "yes" ]; then
     printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
   fi
+  printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
   unset tmp_xml
   unset tmp_post
   unset tmp_message
