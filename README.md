@@ -13,9 +13,11 @@ Requirements
 
   * Bourne shell
   * OpenSSL or [LibreSSL] [4]
+
 If you're using a nutty OS that doesn't include ifconfig or dig:
   * bind-tools (if you don't use the -i flag)
   * net-tools (if you do use the -i flag)
+
 gad will never support iproute2.
 
 Command line usage
