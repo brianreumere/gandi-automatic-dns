@@ -13,6 +13,7 @@ Requirements
 
   * Bourne shell
   * OpenSSL or [LibreSSL] [4]
+  * bind-tools if you use OpenDNS to get the current IP address (I only mention this because some nutty Linux distros and FreeBSD no longer include dig by default)
 
 Command line usage
 ==================
