@@ -119,7 +119,7 @@ Host: "$gandi"
 Content-Type: text/xml
 Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`"
   tmp_message="$tmp_post
-
+  
 $tmp_xml"
   if [ "$debug" == "yes" ]; then
     printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
