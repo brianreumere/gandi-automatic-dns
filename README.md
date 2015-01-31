@@ -13,7 +13,13 @@ Requirements
 
   * Bourne shell
   * OpenSSL or [LibreSSL] [4]
-  * bind-tools if you don't use the -i flag (only mentioned because nutty Linux distros and FreeBSD no longer include the dig command by default)
+
+  If you're using a nutty OS that doesn't include ifconfig or dig:
+
+  * bind-tools (if you don't use the -i flag)
+  * net-tools (if you do use the -i flag)
+
+  gad will never support iproute2.
 
 Command line usage
 ==================
