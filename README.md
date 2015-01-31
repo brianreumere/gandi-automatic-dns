@@ -13,7 +13,7 @@ Requirements
 
   * Bourne shell
   * OpenSSL or [LibreSSL] [4]
-  * bind-tools if you don't use the -i flag (only mentioned because nutty Linux distros and FreeBSD no longer include dig by default)
+  * bind-tools if you don't use the -i flag (only mentioned because nutty Linux distros and FreeBSD no longer include the dig command by default)
 
 Command line usage
 ==================
