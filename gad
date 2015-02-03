@@ -51,7 +51,7 @@ done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
   usage
 fi
-if [ "$ipv6" == "yes" ]; then
+if [ "$ipv6" = "yes" ]; then
   record_type="AAAA"
   ip_regex="\([0-9A-Fa-f:]*\)"
   inet="inet6"
@@ -61,14 +61,14 @@ else
   inet="inet"
 fi
 
-if [ "$debug" == "yes" ]; then
+if [ "$debug" = "yes" ]; then
   printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
 gandi="rpc.gandi.net:443"
 
 rpc() {
-  if [ "$debug" == "yes" ]; then
+  if [ "$debug" = "yes" ]; then
     printf "RPC call to methodName = %s\n\n" "$1" 1>&2
   fi
   tmp_xml="<?xml version=\"1.0\"?>
@@ -117,11 +117,11 @@ rpc() {
 User-Agent: Gandi Automatic DNS shell script/0.3
 Host: "$gandi"
 Content-Type: text/xml
-Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`"
-  tmp_message="$tmp_post
-  
-$tmp_xml"
-  if [ "$debug" == "yes" ]; then
+Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
+
+"
+  tmp_message="$tmp_post$tmp_xml"
+  if [ "$debug" = "yes" ]; then
     printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
   fi
   printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
@@ -133,7 +133,7 @@ $tmp_xml"
 update() {
   while [ ! -z "$1" ]; do
     new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-    if [ "$debug" == "yes" ]; then
+    if [ "$debug" = "yes" ]; then
       printf "new_record_id = %s\n\n" "$new_record_id"
     fi
     rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
@@ -168,7 +168,7 @@ check() {
         records_to_update="$records_to_update $1"
       fi
     fi
-    if [ "$debug" == "yes" ]; then
+    if [ "$debug" = "yes" ]; then
       printf "record = %s\nrecord_value = %s\nrecords_to_create = %s\nrecords_to_update = %s\n\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
     fi
     shift
@@ -187,13 +187,13 @@ if [ -z "$ext_ip" ]; then
   printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
   exit 1
 fi
-if [ "$debug" == "yes" ]; then
+if [ "$debug" = "yes" ]; then
   printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
 fi
 
 # Get the active zonefile for the domain
 zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-if [ "$debug" == "yes" ]; then
+if [ "$debug" = "yes" ]; then
   printf "zone_id = %s\n\n" "$zone_id"
 fi
 
@@ -203,7 +203,7 @@ check $records
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-  if [ "$debug" == "yes" ]; then
+  if [ "$debug" = "yes" ]; then
     printf "new_version_id = %s\n\n" "$new_version_id"
   fi
   update $records_to_update
