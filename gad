@@ -196,6 +196,10 @@ zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*
 if [ "$debug" = "yes" ]; then
   printf "zone_id = %s\n\n" "$zone_id"
 fi
+if [ -z "$zone_id" ]; then
+  printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\n"
+  exit 1
+fi
 
 # Check values of records in the active version of the zonefile
 check $records
