@@ -202,7 +202,9 @@ if [ -z "$zone_id" ]; then
 fi
 
 # Check values of records in the active version of the zonefile
+set -f
 check $records
+set +f
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
@@ -210,8 +212,10 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   if [ "$debug" = "yes" ]; then
     printf "new_version_id = %s\n\n" "$new_version_id"
   fi
+  set -f
   update $records_to_update
   create $records_to_create
+  set +f
   if [ "$testing" != "yes" ]; then
     printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
     rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
