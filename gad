@@ -180,7 +180,7 @@ check() {
 
 # Get correct IP address
 if [ ! -z "$ext_ip" ]; then
-  ext_ip_method="externally provided"
+  ext_ip_method="External provided IP"
 elif [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
