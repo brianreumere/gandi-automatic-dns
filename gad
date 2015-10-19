@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 0.3
+# Gandi Automatic DNS 0.4
 
-# Copyright (c) 2012, 2013, 2014 ***REMOVED***
+# Copyright (c) 2012, 2013, 2014, 2015 ***REMOVED***
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -116,7 +116,7 @@ rpc() {
   </params>
 </methodCall>"
   tmp_post="POST /xmlrpc/ HTTP/1.0
-User-Agent: Gandi Automatic DNS shell script/0.3
+User-Agent: Gandi Automatic DNS shell script/0.4
 Host: "$gandi"
 Content-Type: text/xml
 Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
