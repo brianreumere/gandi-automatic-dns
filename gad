@@ -22,10 +22,10 @@ usage() {
 -6: Update AAAA record(s) instead of A record(s)
 -e: Print debugging information to stdout
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
+-s: Read IP address information from standard input
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
--j: Use a manually provided external IP address
 
 EXT_IF: The name of your external network interface
 EXT_IP: Your external IP address
@@ -40,10 +40,10 @@ while [ $# -gt 0 ]; do
     -6) ipv6="yes";;
     -e) debug="yes";;
     -f) force="yes";;
+    -s) stdin_ip="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
     -i) ext_if="$2"; shift;;
-    -j) ext_ip="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
     -r) records="$2"; shift;;
@@ -179,8 +179,9 @@ check() {
 }
 
 # Get correct IP address
-if [ ! -z "$ext_ip" ]; then
-  ext_ip_method="manual command-line flag"
+if [ "$stdin_ip" = "yes" ]; then
+  ext_ip_method="standard input"
+  read ext_ip
 elif [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
