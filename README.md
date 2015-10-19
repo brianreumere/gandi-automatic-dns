@@ -30,7 +30,7 @@ $ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "REC
 -t: If a new version of the zonefile is created, do not activate it
 -e: Print debugging information
 -v: Print information to stdout even if a new zonefile isn't needed
--s: Use standard input instead of OpenDNS to determine external IP address
+-s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
 EXT_IF: The name of your external network interface
