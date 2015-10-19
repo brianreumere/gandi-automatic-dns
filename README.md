@@ -1,7 +1,7 @@
 gad
 ===
 
-This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in a Gandi.net zonefile. External IP address discovery is done via a network interface, [OpenDNS] [1], or standard input. The result is compared to the value in the active version of the zonefile of each record in RECORD-NAMES. Using the rpc() function to update different types of DNS records or call other methods of Gandi's XML-RPC API should be fairly trivial.
+This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in a Gandi.net zonefile. External IP address discovery is done via a network interface, [OpenDNS] [1], or a custom command piped to standard input. The result is compared to the value in the active version of the zonefile of each record in RECORD-NAMES.
 
 Prerequisites
 =============
@@ -15,22 +15,22 @@ Requirements
   * OpenSSL or [LibreSSL] [4]
 
 If you're using a nutty OS that doesn't include the ifconfig or dig commands you have three options:
-  * Install bind-tools/dnsutils (to use IP discovery via OpenDNS)
-  * Install net-tools (to use IP discovery via ifconfig)
-  * Use the -s flag and pipe a custom command to gad, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.com -r "RECORD-NAMES"```
+  * Install a package that provides the dig command, commonly bind-tools or dns-utils (to use IP discovery via OpenDNS)
+  * Install a package that provides the ifconfig command, commonly net-tools (to use IP discovery via a network interface)
+  * Use the -s flag and pipe a custom command that outputs your external IP address to gad, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.com -r "RECORD-NAMES"```
 
 Command line usage
 ==================
 
 ```
-$ gad [-6] [-e] [-f] [-s] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -6: Update AAAA record(s) instead of A record(s)
--e: Print debugging information
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
--s: Read IP address information from standard input
 -t: If a new version of the zonefile is created, do not activate it
+-e: Print debugging information
 -v: Print information to stdout even if a new zonefile isn't needed
+-s: Use standard input instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
 EXT_IF: The name of your external network interface

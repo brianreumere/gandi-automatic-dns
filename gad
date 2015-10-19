@@ -17,14 +17,14 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  printf "\nUsage: $0 [-6] [-e] [-f] [-s] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+  printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -6: Update AAAA record(s) instead of A record(s)
--e: Print debugging information to stdout
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
--s: Read IP address information from standard input
 -t: If a new version of the zonefile is created, do not activate it
+-e: Print debugging information to stdout
 -v: Print information to stdout even if a new zonefile isn't needed
+-s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
 EXT_IF: The name of your external network interface
@@ -37,11 +37,11 @@ RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) t
 while [ $# -gt 0 ]; do
   case "$1" in
     -6) ipv6="yes";;
-    -e) debug="yes";;
     -f) force="yes";;
-    -s) stdin_ip="yes";;
     -t) testing="yes";;
+    -e) debug="yes";;
     -v) verbose="yes";;
+    -s) stdin_ip="yes";;
     -i) ext_if="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
