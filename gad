@@ -25,10 +25,10 @@ usage() {
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
--j: Use the external IP address provided as parameter
+-j: Use a manually provided external IP address
 
 EXT_IF: The name of your external network interface
-EXT_IP: The external IP Address
+EXT_IP: Your external IP address
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n"
@@ -42,8 +42,8 @@ while [ $# -gt 0 ]; do
     -f) force="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
-    -j) ext_ip="$2"; shift;;
     -i) ext_if="$2"; shift;;
+    -j) ext_ip="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
     -r) records="$2"; shift;;
@@ -180,7 +180,7 @@ check() {
 
 # Get correct IP address
 if [ ! -z "$ext_ip" ]; then
-  ext_ip_method="External provided IP"
+  ext_ip_method="manual command-line flag"
 elif [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
