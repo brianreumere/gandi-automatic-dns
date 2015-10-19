@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  printf "\nUsage: $0 [-6] [-e] [-f] [-t] [-v] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+  printf "\nUsage: $0 [-6] [-e] [-f] [-t] [-v] [-i EXT_IF] [-j EXT_IP] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -6: Update AAAA record(s) instead of A record(s)
 -e: Print debugging information to stdout
@@ -25,8 +25,10 @@ usage() {
 -t: If a new version of the zonefile is created, do not activate it
 -v: Print information to stdout even if a new zonefile isn't needed
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+-j: Use the external IP address provided as parameter
 
 EXT_IF: The name of your external network interface
+EXT_IP: The external IP Address
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n"
@@ -40,6 +42,7 @@ while [ $# -gt 0 ]; do
     -f) force="yes";;
     -t) testing="yes";;
     -v) verbose="yes";;
+    -j) ext_ip="$2"; shift;;
     -i) ext_if="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
@@ -138,7 +141,7 @@ update() {
     fi
     rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
     shift
-  done    
+  done
 }
 
 create() {
@@ -176,7 +179,9 @@ check() {
 }
 
 # Get correct IP address
-if [ ! -z "$ext_if" ]; then
+if [ ! -z "$ext_ip" ]; then
+  ext_ip_method="External provided IP"
+elif [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
 else
