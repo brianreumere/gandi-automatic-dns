@@ -181,7 +181,7 @@ check() {
 if [ "$stdin_ip" = "yes" ]; then
   ext_ip_method="standard input"
   read ext_ip
-  ext_ip=`echo "$ext_ip" | sed -n "s/"$ip_regex"/\1/p"`
+  ext_ip=`echo "$ext_ip" | sed -n "s/[^0-9]*"$ip_regex"[^0-9]*/\1/p"`
   if [ -z "$ext_ip" ]; then
     printf "Input does not match expected format: %s\n" "$ip_regex"
     unset ext_ip
