@@ -181,6 +181,11 @@ check() {
 if [ "$stdin_ip" = "yes" ]; then
   ext_ip_method="standard input"
   read ext_ip
+  ext_ip=`echo "$ext_ip" | sed -n "s/"$ip_regex"/\1/p"`
+  if [ -z "$ext_ip" ]; then
+    printf "Input does not match expected format: %s\n" "$ip_regex"
+    unset ext_ip
+  fi
 elif [ ! -z "$ext_if" ]; then
   ext_ip_method="ifconfig "$ext_if""
   ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
