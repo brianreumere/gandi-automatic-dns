@@ -247,9 +247,9 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
 else
   if [ "$verbose" = "yes" ]; then
     printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"
-    if [ ! -f $cache_dir/gad-$records.$domain -o ! "$ext_ip" =  "$prev_ip" ]; then
-      echo $ext_ip > $cache_dir/gad-$records.$domain
-    fi
+  fi
+  if [ ! -f $cache_dir/gad-$records.$domain -o ! "$ext_ip" =  "$prev_ip" ]; then
+    echo $ext_ip > $cache_dir/gad-$records.$domain
   fi
   exit
 fi
