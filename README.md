@@ -1,4 +1,4 @@
-gad -forcing a merge
+gad
 ===
 
 This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in Gandi.net zonefiles. External IP address discovery is done via a network interface (works on BSD and Linux with net-tools 1.60-23, untested on anything else) or [OpenDNS] [1]. This is compared to the value in the active version of the zonefile of each record in RECORD-NAMES. Using the rpc() function to update different types of DNS records or call other methods of Gandi's XML-RPC API should be fairly trivial.
