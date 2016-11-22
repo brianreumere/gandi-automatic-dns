@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+  printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [ -c CACHE_DIR ]-a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
@@ -26,6 +26,7 @@ usage() {
 -v: Print information to stdout even if a new zonefile isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+-c: Cache external IP address lookups in between invocations of this script to lower RPC calls to gandi.net. Defaults to /tmp
 
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
@@ -43,6 +44,7 @@ while [ $# -gt 0 ]; do
     -v) verbose="yes";;
     -s) stdin_ip="yes";;
     -i) ext_if="$2"; shift;;
+    -c) cache_dir="$2"; shift;;
     -a) apikey="$2"; shift;;
     -d) domain="$2"; shift;;
     -r) records="$2"; shift;;
@@ -63,8 +65,12 @@ else
   inet="inet"
 fi
 
+if [ -z "$cache_dir"]; then
+  cache_dir="/tmp"
+fi
+
 if [ "$debug" = "yes" ]; then
-  printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+  printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\ncache_dir = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex" "$cache_dir"
 fi
 
 gandi="rpc.gandi.net:443"
@@ -196,6 +202,14 @@ if [ "$debug" = "yes" ]; then
   printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
 fi
 
+if [ -f $cache_dir/gad-$records.$domain ]; then
+  prev_ip=`cat $cache_dir/gad-$records.$domain`
+  if [ $ext_ip =  $prev_ip ]; then
+    printf "External IP has not changed from %s No need to update records with gandi.net\n" "$prev_ip"
+    exit
+  fi
+fi
+
 # Get the active zonefile for the domain
 zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
 if [ "$debug" = "yes" ]; then
@@ -228,10 +242,14 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
   else
     printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
   fi
+  echo $ext_ip > $cache_dir/gad-$records.$domain
   exit
 else
   if [ "$verbose" = "yes" ]; then
     printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"
+  fi
+  if [ ! -f $cache_dir/gad-$records.$domain -o ! "$ext_ip" =  "$prev_ip" ]; then
+    echo $ext_ip > $cache_dir/gad-$records.$domain
   fi
   exit
 fi

@@ -23,7 +23,7 @@ Command-line usage
 ==================
 
 ```
-$ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [ -c CACHE_DIR ] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
@@ -32,8 +32,10 @@ $ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "REC
 -v: Print information to stdout even if a new zonefile isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+-c: Cache external IP address lookups in between invocations of this script to lower RPC calls to gandi.net. Defaults to /tmp
 
 EXT_IF: The name of your external network interface
+CACHE_DIR: The directory to cache IP address lookups to, IP address stored in $records.$domain file
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
