@@ -6,7 +6,7 @@ This script is intended to be used as a cron job to maintain the accuracy of mul
 Prerequisites
 =============
 
-Your domain needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. There are instructions on Gandi's wiki to [create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. There is a FAQ regarding this [here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file)..
+Your domain needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. There are instructions on Gandi's wiki to [create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. There is a FAQ regarding this [here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
 
 Requirements
 ============
