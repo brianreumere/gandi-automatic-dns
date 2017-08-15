@@ -134,7 +134,7 @@ Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 update() {
   while [ ! -z "$1" ]; do
-    new_record_id=`rpc "domain.zone.record.list" "string" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
     if [ "$debug" = "yes" ]; then
       printf "new_record_id = %s\n\n" "$new_record_id"
     fi
@@ -152,7 +152,7 @@ create() {
 
 check() {
   while [ ! -z "$1" ]; do
-    record_value=`rpc "domain.zone.record.list" "string" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
+    record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
     record_count=`printf "$record_value" | wc -w`
     if [ "$record_count" -gt "1" ]; then
       printf "Sorry, but gad does not support updating multiple records with the same name.\n"
