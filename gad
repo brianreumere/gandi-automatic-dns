@@ -138,7 +138,7 @@ update() {
     if [ "$debug" = "yes" ]; then
       printf "new_record_id = %s\n\n" "$new_record_id"
     fi
-    rpc "domain.zone.record.update" "string" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
+    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
     shift
   done
 }
