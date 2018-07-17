@@ -108,7 +108,7 @@ X-Api-Key: ${apikey}
     if [ "$debug" = "yes" ]; then
         printf "Sending REST message tmp_message =\\n\\n%s\\n\\n" "$tmp_message" 1>&2
     fi
-    printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
+    printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
     unset tmp_json
     unset tmp_request
     unset tmp_message
@@ -241,10 +241,10 @@ check() {
         if [ "$v5" = "yes" ]; then
             record_json=$(rest "GET" "zones/${zone_id}/records/${1}/${record_type}")
             record_value=$(get_json_field "rrset_values" "$record_json")
-            record_count=$(printf "$record_value" | wc -w)
+            record_count=$(printf "%s" "$record_value" | wc -w)
         else
-            record_value=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p")
-            record_count=$(printf "$record_value" | wc -w)
+            record_value=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>${ip_regex}.*/\1/p")
+            record_count=$(printf "%s" "$record_value" | wc -w)
         fi
         if [ "$record_count" -gt "1" ]; then
             printf "Sorry, but gad does not support updating multiple records with the same name.\\n"
