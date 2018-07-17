@@ -74,7 +74,7 @@ else
     inet="inet"
 fi
 if [ "$debug" = "yes" ]; then
-    printf "Initial flags:\\n\\n---\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n---\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+    printf "Initial flags:\\n---\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n---\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
 #
@@ -116,7 +116,7 @@ X-Api-Key: ${apikey}
 "
     tmp_message="${tmp_request}${tmp_json}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending REST message tmp_message:\\n\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
+        printf "Sending REST message tmp_message:\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
     fi
     printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
     unset tmp_json
@@ -237,7 +237,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 "
     tmp_message="${tmp_post}${tmp_xml}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending XML-RPC message tmp_message:\\n\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
+        printf "Sending XML-RPC message tmp_message:\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
     fi
     printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
     unset tmp_xml
@@ -325,7 +325,7 @@ check() {
             fi
         fi
         if [ "$debug" = "yes" ]; then
-            printf "Checking record with the following information:\\n\\n---\\nrecord: %s\\nrecord_value: %s\\nrecords_to_create: %s\\nrecords_to_update: %s\\n---\\n\\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
+            printf "Results after checking record:\\n---\\nrecord: %s\\nrecord_value: %s\\nrecords_to_create: %s\\nrecords_to_update: %s\\n---\\n\\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
         fi
         shift
     done
@@ -350,7 +350,7 @@ if [ -z "$ext_ip" ]; then
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "IP information:\\n\\n---\\next_ip_method: %s\\next_ip: %s\\n---\\n\\n" "$ext_ip_method" "$ext_ip"
+    printf "IP information:\\n---\\next_ip_method: %s\\next_ip: %s\\n---\\n\\n" "$ext_ip_method" "$ext_ip"
 fi
 
 #
