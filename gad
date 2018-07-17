@@ -98,9 +98,9 @@ rest() {
     fi
     tmp_request="${1} /api/v5/${2} HTTP/1.1
 User-Agent: Gandi Automatic DNS shell script/1.0.0
-Host: `printf "%s" "$gandi" | cut -d ':' -f 1 -`
+Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: application/json
-Content-Length: `printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]"`
+Content-Length: $(printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]")
 X-Api-Key: ${apikey}
 
 "
@@ -121,16 +121,16 @@ get_json_field() {
     # isn't found. Kind of gross but it works.
     updated_json="$2"
     while true; do
-        updated_json=`printf "%s" "$updated_json" | sed 's/\(\[[^,]*\),/\1/g'`
+        updated_json=$(printf "%s" "$updated_json" | sed 's/\(\[[^,]*\),/\1/g')
         if printf "%s" "$updated_json" | grep -e '\[[^,]*,' > /dev/null; then
             continue
         else
             break
         fi
     done
-    for i in `printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'`; do
-        field_name=`printf "%s" "$i" | awk -F ': ' '{print $1}' | tr -d '"' | tr -d '[]'`
-        field_value=`printf "%s" "$i" | awk -F ': ' '{print $2}' | tr -d '"' | tr -d '[]'`
+    for i in $(printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'); do
+        field_name=$(printf "%s" "$i" | awk -F ': ' '{print $1}' | tr -d '"' | tr -d '[]')
+        field_value=$(printf "%s" "$i" | awk -F ': ' '{print $2}' | tr -d '"' | tr -d '[]')
         if [ "$field_name" = "$1" ]; then
             printf "%s" "$field_value"
             break
@@ -187,9 +187,9 @@ rpc() {
 </methodCall>"
     tmp_post="POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.4
-Host: `printf "%s" "$gandi" | cut -d ':' -f 1 -`
+Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: text/xml
-Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
+Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 
 "
     tmp_message="${tmp_post}${tmp_xml}"
@@ -205,13 +205,13 @@ Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=`rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}"`
-            new_record_message=`get_json_field "message" "$new_record_json"`
+            new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message = %s\\n\\n" "$new_record_message"
             fi
         else
-            new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
+            new_record_id=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p')
             if [ "$debug" = "yes" ]; then
                 printf "new_record_id = %s\\n\\n" "$new_record_id"
             fi
@@ -224,8 +224,8 @@ update() {
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=`rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}"`
-            new_record_message=`get_json_field "message" "$new_record_json"`
+            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message = %s\\n\\n" "$new_record_message"
             fi
@@ -239,12 +239,12 @@ create() {
 check() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            record_json=`rest "GET" "zones/${zone_id}/records/${1}/${record_type}"`
-            record_value=`get_json_field "rrset_values" "$record_json"`
-            record_count=`printf "$record_value" | wc -w`
+            record_json=$(rest "GET" "zones/${zone_id}/records/${1}/${record_type}")
+            record_value=$(get_json_field "rrset_values" "$record_json")
+            record_count=$(printf "$record_value" | wc -w)
         else
-            record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
-            record_count=`printf "$record_value" | wc -w`
+            record_value=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p")
+            record_count=$(printf "$record_value" | wc -w)
         fi
         if [ "$record_count" -gt "1" ]; then
             printf "Sorry, but gad does not support updating multiple records with the same name.\\n"
@@ -275,10 +275,10 @@ if [ "$stdin_ip" = "yes" ]; then
     read ext_ip
 elif [ ! -z "$ext_if" ]; then
     ext_ip_method="ifconfig "$ext_if""
-    ext_ip=`ifconfig "$ext_if" | sed -n "s/.*${inet} \(addr:\)* *${ip_regex}.*/\2/p" | head -1`
+    ext_ip=$(ifconfig "$ext_if" | sed -n "s/.*${inet} \(addr:\)* *${ip_regex}.*/\2/p" | head -1)
 else
     ext_ip_method="OpenDNS"
-    ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
+    ext_ip=$(dig "$record_type" +short @resolver1.opendns.com myip.opendns.com)
 fi
 if [ -z "$ext_ip" ]; then
     printf "Failed to determine external IP address with %s. See above error.\\n" "$ext_ip_method"
@@ -290,10 +290,10 @@ fi
 
 # Get the active zonefile for the domain
 if [ "$v5" = "yes" ]; then
-    domain_json=`rest "GET" "domains/${domain}"`
-    zone_id=`get_json_field "zone_uuid" "$domain_json"`
+    domain_json=$(rest "GET" "domains/${domain}")
+    zone_id=$(get_json_field "zone_uuid" "$domain_json")
 else
-    zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+    zone_id=$(rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
 fi
 if [ -z "$zone_id" ]; then
     printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\\n"
@@ -311,8 +311,8 @@ set +f
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     if [ "$v5" = "yes" ]; then
-        new_snapshot_json=`rest "POST" "/zones/${zone_id}/snapshots" ""`
-        new_snapshot_id=`get_json_field "uuid" "$new_snapshot_json"`
+        new_snapshot_json=$(rest "POST" "/zones/${zone_id}/snapshots" "")
+        new_snapshot_id=$(get_json_field "uuid" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
             printf "new_snapshot_id = %s\\n\\n" "$new_snapshot_id"
         fi
@@ -322,7 +322,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         set +f
         printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\\n\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
     else
-        new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+        new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
             printf "new_version_id = %s\\n\\n" "$new_version_id"
         fi
