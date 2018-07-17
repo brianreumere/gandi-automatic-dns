@@ -274,7 +274,7 @@ if [ "$stdin_ip" = "yes" ]; then
     ext_ip_method="standard input"
     read ext_ip
 elif [ ! -z "$ext_if" ]; then
-    ext_ip_method="ifconfig "$ext_if""
+    ext_ip_method="ifconfig ${ext_if}"
     ext_ip=$(ifconfig "$ext_if" | sed -n "s/.*${inet} \(addr:\)* *${ip_regex}.*/\2/p" | head -1)
 else
     ext_ip_method="OpenDNS"
