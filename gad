@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-  printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
@@ -32,228 +32,248 @@ EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n"
-  exit 1
+    exit 1
 }
 
 while [ $# -gt 0 ]; do
-  case "$1" in
-    -5) v5="yes";;
-    -6) ipv6="yes";;
-    -f) force="yes";;
-    -t) testing="yes";;
-    -e) debug="yes";;
-    -v) verbose="yes";;
-    -s) stdin_ip="yes";;
-    -i) ext_if="$2"; shift;;
-    -a) apikey="$2"; shift;;
-    -d) domain="$2"; shift;;
-    -r) records="$2"; shift;;
-    *) usage; break
-  esac
-  shift
+    case "$1" in
+        -5) v5="yes";;
+        -6) ipv6="yes";;
+        -f) force="yes";;
+        -t) testing="yes";;
+        -e) debug="yes";;
+        -v) verbose="yes";;
+        -s) stdin_ip="yes";;
+        -i) ext_if="$2"; shift;;
+        -a) apikey="$2"; shift;;
+        -d) domain="$2"; shift;;
+        -r) records="$2"; shift;;
+        *) usage; break
+    esac
+    shift
 done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
-  usage
+    usage
 fi
 if [ "$ipv6" = "yes" ]; then
-  record_type="AAAA"
-  ip_regex="\([0-9A-Fa-f:]*\)"
-  inet="inet6"
+    record_type="AAAA"
+    ip_regex="\([0-9A-Fa-f:]*\)"
+    inet="inet6"
 else
-  record_type="A"
-  ip_regex="\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\)"
-  inet="inet"
+    record_type="A"
+    ip_regex="\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\)"
+    inet="inet"
 fi
 
 if [ "$debug" = "yes" ]; then
-  printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+    printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
 if [ "$v5" = "yes" ]; then
-  gandi="dns.api.gandi.net:443"
+    gandi="dns.api.gandi.net:443"
 else
-  gandi="rpc.gandi.net:443"
+    gandi="rpc.gandi.net:443"
 fi
 
 rest() {
-  if [ "$debug" = "yes" ]; then
-    printf "REST call to endpoint = %s\n\n" "$1" 1>&2
-  fi
-  endpoint="$1"
-  shift
-#  tmp_json="{
-#"
-  while [ ! -z "$1" ]; do
-    tmp_json="$tmp_json
-\"${1}\": \"${2}\",
-"
-  shift; shift
-  done
-#  tmp_json="$tmp_json
-#}"
-  tmp_method="GET /api/v5/${endpoint} HTTP/1.1
+    if [ "$debug" = "yes" ]; then
+        printf "REST call to endpoint = %s\n\n" "$2" 1>&2
+    fi
+    if [ "$1" = 'GET' ]; then
+        tmp_json=""
+    else
+        tmp_json="$3"
+    fi
+    tmp_request="${1} /api/v5/${2} HTTP/1.1
 User-Agent: Gandi Automatic DNS shell script/1.0.0
-Host: `printf "$gandi" | cut -d ':' -f 1 -`
-X-Api-Key: "$apikey"
+Host: `printf "%s" "$gandi" | cut -d ':' -f 1 -`
 Content-Type: application/json
 Content-Length: `printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]"`
+X-Api-Key: ${apikey}
 
 "
-  tmp_message="$tmp_method$tmp_json"
-  if [ "$debug" = "yes" ]; then
-    printf "Sending REST message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
-  fi
-  #printf "%s" "$tmp_message" | openssl s_client -quiet -ign_eof -connect "$gandi" 2> /dev/null
-  echo "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
-  unset tmp_json
-  unset tmp_method
-  unset tmp_message
+    tmp_message="${tmp_request}${tmp_json}"
+    if [ "$debug" = "yes" ]; then
+        printf "Sending REST message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
+    fi
+    printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
+    unset tmp_json
+    unset tmp_request
+    unset tmp_message
 }
 
+get_json_field() {
+    IFS=$'\n'
+    # Handle JSON lists by replacing the first comma within one, grepping for
+    # additional instances of the same pattern, and breaking when the pattern
+    # isn't found. Kind of gross but it works.
+    updated_json="$2"
+    while true; do
+        updated_json=`printf "%s" "$updated_json" | sed 's/\(\[[^,]*\),/\1/g'`
+        if printf "%s" "$updated_json" | grep -e '\[[^,]*,' > /dev/null; then
+            continue
+        else
+            break
+        fi
+    done
+    for i in `printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'`; do
+        field_name=`printf "%s" "$i" | awk -F ': ' '{print $1}' | tr -d '"' | tr -d '[]'`
+        field_value=`printf "%s" "$i" | awk -F ': ' '{print $2}' | tr -d '"' | tr -d '[]'`
+        if [ "$field_name" = "$1" ]; then
+            printf "%s" "$field_value"
+            break
+        fi
+    done
+    unset IFS
+}
 
 rpc() {
-  if [ "$debug" = "yes" ]; then
-    printf "RPC call to methodName = %s\n\n" "$1" 1>&2
-  fi
-  tmp_xml="<?xml version=\"1.0\"?>
-<methodCall>
-  <methodName>"$1"</methodName>
-  <params>
-    <param>
-      <value><string>"$apikey"</string></value>
-    </param>"
-  shift
-  while [ ! -z "$1" ]; do
-    if [ "$1" != "struct" ]; then
-      tmp_xml="$tmp_xml
-    <param>
-      <value><"$1">"$2"</"$1"></value>
-    </param>"
-    shift; shift
-    else
-      tmp_xml="$tmp_xml
-    <param>
-      <value>
-        <struct>"
-      shift;
-      while [ ! -z "$1" ]; do
-        if [ "$1" != "struct" ]; then
-          tmp_xml="$tmp_xml
-          <member>
-            <name>"$1"</name>
-            <value><"$2">"$3"</"$2"></value>
-          </member>"
-            shift; shift; shift;
-        else
-          break
-        fi
-      done
-      tmp_xml="$tmp_xml
-        </struct>
-      </value>
-    </param>"
+    if [ "$debug" = "yes" ]; then
+        printf "RPC call to methodName = %s\n\n" "$1" 1>&2
     fi
-  done
-  tmp_xml="$tmp_xml
-  </params>
+    tmp_xml="<?xml version=\"1.0\"?>
+<methodCall>
+    <methodName>"$1"</methodName>
+    <params>
+        <param>
+            <value><string>"$apikey"</string></value>
+        </param>"
+    shift
+    while [ ! -z "$1" ]; do
+        if [ "$1" != "struct" ]; then
+            tmp_xml="$tmp_xml
+        <param>
+            <value><"$1">"$2"</"$1"></value>
+        </param>"
+        shift; shift
+        else
+            tmp_xml="$tmp_xml
+        <param>
+            <value>
+                <struct>"
+            shift;
+            while [ ! -z "$1" ]; do
+                if [ "$1" != "struct" ]; then
+                    tmp_xml="$tmp_xml
+                    <member>
+                        <name>"$1"</name>
+                        <value><"$2">"$3"</"$2"></value>
+                    </member>"
+                        shift; shift; shift;
+                else
+                    break
+                fi
+            done
+            tmp_xml="$tmp_xml
+                </struct>
+            </value>
+        </param>"
+        fi
+    done
+    tmp_xml="$tmp_xml
+    </params>
 </methodCall>"
-  tmp_post="POST /xmlrpc/ HTTP/1.0
+    tmp_post="POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.4
 Host: "$gandi"
 Content-Type: text/xml
 Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 "
-  tmp_message="$tmp_post$tmp_xml"
-  if [ "$debug" = "yes" ]; then
-    printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
-  fi
-  printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
-  unset tmp_xml
-  unset tmp_post
-  unset tmp_message
+    tmp_message="$tmp_post$tmp_xml"
+    if [ "$debug" = "yes" ]; then
+        printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
+    fi
+    printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
+    unset tmp_xml
+    unset tmp_post
+    unset tmp_message
 }
 
 update() {
-  while [ ! -z "$1" ]; do
-    new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
-    if [ "$debug" = "yes" ]; then
-      printf "new_record_id = %s\n\n" "$new_record_id"
-    fi
-    rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
-    shift
-  done
+    while [ ! -z "$1" ]; do
+        new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
+        if [ "$debug" = "yes" ]; then
+            printf "new_record_id = %s\n\n" "$new_record_id"
+        fi
+        rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
+        shift
+    done
 }
 
 create() {
-  while [ ! -z "$1" ]; do
-    rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
-    shift
-  done
+    while [ ! -z "$1" ]; do
+        rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
+        shift
+    done
 }
 
 check() {
-  while [ ! -z "$1" ]; do
-    if [ "$v5" = "yes" ]; then
-      record_value=`rest "zones/${zone_id}/records/${1}/${record_type}"`
-    else
-      record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
-      record_count=`printf "$record_value" | wc -w`
-      if [ "$record_count" -gt "1" ]; then
-        printf "Sorry, but gad does not support updating multiple records with the same name.\n"
-        exit 1
-      elif [ -z "$record_value" ]; then
-        if [ -z "$records_to_create" ]; then
-          records_to_create="$1"
+    while [ ! -z "$1" ]; do
+        if [ "$v5" = "yes" ]; then
+            record_json=`rest GET "zones/${zone_id}/records/${1}/${record_type}"`
+            record_value=`get_json_field rrset_values "$record_json"`
+            record_count=`printf "$record_value" | wc -w`
         else
-          records_to_create="$records_to_create $1"
+            record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
+            record_count=`printf "$record_value" | wc -w`
         fi
-      elif [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
-        if [ -z "$records_to_update" ]; then
-          records_to_update="$1"
-        else
-          records_to_update="$records_to_update $1"
+        if [ "$record_count" -gt "1" ]; then
+            printf "Sorry, but gad does not support updating multiple records with the same name.\n"
+            exit 1
+        elif [ -z "$record_value" ]; then
+            if [ -z "$records_to_create" ]; then
+                records_to_create="$1"
+            else
+                records_to_create="$records_to_create $1"
+            fi
+        elif [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
+            if [ -z "$records_to_update" ]; then
+                records_to_update="$1"
+            else
+                records_to_update="$records_to_update $1"
+            fi
         fi
-      fi
-    fi
-    if [ "$debug" = "yes" ]; then
-      printf "record = %s\nrecord_value = %s\nrecords_to_create = %s\nrecords_to_update = %s\n\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
-    fi
-    shift
-  done
+        if [ "$debug" = "yes" ]; then
+            printf "record = %s\nrecord_value = %s\nrecords_to_create = %s\nrecords_to_update = %s\n\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
+        fi
+        shift
+    done
+    exit
 }
 
 # Get correct IP address
 if [ "$stdin_ip" = "yes" ]; then
-  ext_ip_method="standard input"
-  read ext_ip
+    ext_ip_method="standard input"
+    read ext_ip
 elif [ ! -z "$ext_if" ]; then
-  ext_ip_method="ifconfig "$ext_if""
-  ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
+    ext_ip_method="ifconfig "$ext_if""
+    ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
 else
-  ext_ip_method="OpenDNS"
-  ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
+    ext_ip_method="OpenDNS"
+    ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
 fi
 if [ -z "$ext_ip" ]; then
-  printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
-  exit 1
+    printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
+    exit 1
 fi
 if [ "$debug" = "yes" ]; then
-  printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
+    printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
 fi
 
 # Get the active zonefile for the domain
 if [ "$v5" = "yes" ]; then
-  zone_id=`rest "domains/${domain}" | sed 's/[ {}""]//g' | sed 's/,/\n/g' | grep zone_uuid | cut -d ':' -f 2 -`
+    domain_json=`rest GET "domains/${domain}"`
+    zone_id=`get_json_field zone_uuid "$domain_json"`
 else
-  zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-fi
-if [ "$debug" = "yes" ]; then
-  printf "zone_id = %s\n\n" "$zone_id"
+    zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
 fi
 if [ -z "$zone_id" ]; then
-  printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\n"
-  exit 1
+    printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\n"
+    exit 1
+fi
+if [ "$debug" = "yes" ]; then
+    printf "zone_id = %s\n\n" "$zone_id"
 fi
 
 # Check values of records in the active version of the zonefile
@@ -264,25 +284,25 @@ exit
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
-  new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-  if [ "$debug" = "yes" ]; then
-    printf "new_version_id = %s\n\n" "$new_version_id"
-  fi
-  set -f
-  update $records_to_update
-  create $records_to_create
-  set +f
-  if [ "$testing" != "yes" ]; then
-    printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
-    rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-    printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
-  else
-    printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
-  fi
-  exit
+    new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+    if [ "$debug" = "yes" ]; then
+        printf "new_version_id = %s\n\n" "$new_version_id"
+    fi
+    set -f
+    update $records_to_update
+    create $records_to_create
+    set +f
+    if [ "$testing" != "yes" ]; then
+        printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
+        rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
+        printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+    else
+        printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+    fi
+    exit
 else
-  if [ "$verbose" = "yes" ]; then
-    printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"
-  fi
-  exit
+    if [ "$verbose" = "yes" ]; then
+        printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"
+    fi
+    exit
 fi
