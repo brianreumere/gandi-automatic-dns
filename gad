@@ -74,7 +74,7 @@ else
     inet="inet"
 fi
 if [ "$debug" = "yes" ]; then
-    printf "Initial flags:\\n\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+    printf "Initial flags:\\n\\n---\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n---\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
 #
@@ -98,7 +98,7 @@ fi
 
 rest() {
     if [ "$debug" = "yes" ]; then
-        printf "REST call to endpoint = %s\\n\\n" "$2" 1>&2
+        printf "REST call to endpoint: %s\\n\\n" "$2" 1>&2
     fi
     # Throw away third argument to function if verb is GET
     if [ "$1" = "GET" ]; then
@@ -116,7 +116,7 @@ X-Api-Key: ${apikey}
 "
     tmp_message="${tmp_request}${tmp_json}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending REST message tmp_message =\\n\\n%s\\n\\n" "$tmp_message" 1>&2
+        printf "Sending REST message tmp_message:\\n\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
     fi
     printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
     unset tmp_json
@@ -151,7 +151,8 @@ get_json_field() {
     done
     # Set internal field separator to a new line, so our for loop loops over the
     # records returned on separate lines by the awk command below
-    IFS=$(printf '\n')
+    IFS='
+'
     # Trim out curly braces, anything like a newline, split records on ", " with
     # awk, replace any leading whitespace with sed, and loop over records.
     for i in $(printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'); do
@@ -183,7 +184,7 @@ get_json_field() {
 
 rpc() {
     if [ "$debug" = "yes" ]; then
-        printf "RPC call to methodName = %s\\n\\n" "$1" 1>&2
+        printf "RPC call to methodName: %s\\n\\n" "$1" 1>&2
     fi
     tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
@@ -236,7 +237,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 "
     tmp_message="${tmp_post}${tmp_xml}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending XML-RPC message tmp_message =\\n\\n%s\\n\\n" "$tmp_message" 1>&2
+        printf "Sending XML-RPC message tmp_message:\\n\\n---\\n%s\\n---\\n\\n" "$tmp_message" 1>&2
     fi
     printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
     unset tmp_xml
@@ -256,12 +257,12 @@ update() {
             new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message = %s\\n\\n" "$new_record_message"
+                printf "new_record_message: %s\\n\\n" "$new_record_message"
             fi
         else
             new_record_id=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p')
             if [ "$debug" = "yes" ]; then
-                printf "new_record_id = %s\\n\\n" "$new_record_id"
+                printf "new_record_id: %s\\n\\n" "$new_record_id"
             fi
             rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
         fi
@@ -281,7 +282,7 @@ create() {
             new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message = %s\\n\\n" "$new_record_message"
+                printf "new_record_message: %s\\n\\n" "$new_record_message"
             fi
         else
             rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
@@ -324,7 +325,7 @@ check() {
             fi
         fi
         if [ "$debug" = "yes" ]; then
-            printf "record = %s\\nrecord_value = %s\\nrecords_to_create = %s\\nrecords_to_update = %s\\n\\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
+            printf "Checking record with the following information:\\n\\n---\\nrecord: %s\\nrecord_value: %s\\nrecords_to_create: %s\\nrecords_to_update: %s\\n---\\n\\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
         fi
         shift
     done
@@ -349,7 +350,7 @@ if [ -z "$ext_ip" ]; then
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "IP information:\\n\\next_ip_method = %s\\next_ip = %s\\n\\n" "$ext_ip_method" "$ext_ip"
+    printf "IP information:\\n\\n---\\next_ip_method: %s\\next_ip: %s\\n---\\n\\n" "$ext_ip_method" "$ext_ip"
 fi
 
 #
@@ -367,7 +368,7 @@ if [ -z "$zone_id" ]; then
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "zone_id = %s\\n\\n" "$zone_id"
+    printf "zone_id: %s\\n\\n" "$zone_id"
 fi
 
 #
@@ -387,7 +388,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         new_snapshot_json=$(rest "POST" "/zones/${zone_id}/snapshots" "")
         new_snapshot_id=$(get_json_field "uuid" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
-            printf "new_snapshot_id = %s\\n\\n" "$new_snapshot_id"
+            printf "new_snapshot_id: %s\\n\\n" "$new_snapshot_id"
         fi
         set -f
         update $records_to_update
@@ -397,7 +398,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     else
         new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
-            printf "new_version_id = %s\\n\\n" "$new_version_id"
+            printf "new_version_id: %s\\n\\n" "$new_version_id"
         fi
         set -f
         update $records_to_update
