@@ -18,7 +18,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-    printf "\nUsage: %s [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\\nUsage: %s [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
@@ -32,7 +32,7 @@ usage() {
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n" "$0"
+RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\\n\\n" "$0"
     exit 1
 }
 
@@ -73,7 +73,7 @@ else
 fi
 
 if [ "$debug" = "yes" ]; then
-    printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+    printf "Initial flags:\\n\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
 # Set API address
@@ -88,7 +88,7 @@ fi
 
 rest() {
     if [ "$debug" = "yes" ]; then
-        printf "REST call to endpoint = %s\n\n" "$2" 1>&2
+        printf "REST call to endpoint = %s\\n\\n" "$2" 1>&2
     fi
     # Throw away third argument to function if verb is GET
     if [ "$1" = "GET" ]; then
@@ -106,7 +106,7 @@ X-Api-Key: ${apikey}
 "
     tmp_message="${tmp_request}${tmp_json}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending REST message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
+        printf "Sending REST message tmp_message =\\n\\n%s\\n\\n" "$tmp_message" 1>&2
     fi
     printf "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null | tail -1
     unset tmp_json
@@ -141,7 +141,7 @@ get_json_field() {
 
 rpc() {
     if [ "$debug" = "yes" ]; then
-        printf "RPC call to methodName = %s\n\n" "$1" 1>&2
+        printf "RPC call to methodName = %s\\n\\n" "$1" 1>&2
     fi
     tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
@@ -194,7 +194,7 @@ Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 "
     tmp_message="${tmp_post}${tmp_xml}"
     if [ "$debug" = "yes" ]; then
-        printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
+        printf "Sending XML-RPC message tmp_message =\\n\\n%s\\n\\n" "$tmp_message" 1>&2
     fi
     printf "%s" "$tmp_message" | openssl s_client -quiet -connect "$gandi" 2> /dev/null
     unset tmp_xml
@@ -208,12 +208,12 @@ update() {
             new_record_json=`rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}"`
             new_record_message=`get_json_field "message" "$new_record_json"`
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message = %s\n\n" "$new_record_message"
+                printf "new_record_message = %s\\n\\n" "$new_record_message"
             fi
         else
             new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
             if [ "$debug" = "yes" ]; then
-                printf "new_record_id = %s\n\n" "$new_record_id"
+                printf "new_record_id = %s\\n\\n" "$new_record_id"
             fi
             rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
         fi
@@ -227,7 +227,7 @@ create() {
             new_record_json=`rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}"`
             new_record_message=`get_json_field "message" "$new_record_json"`
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message = %s\n\n" "$new_record_message"
+                printf "new_record_message = %s\\n\\n" "$new_record_message"
             fi
         else
             rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
@@ -247,7 +247,7 @@ check() {
             record_count=`printf "$record_value" | wc -w`
         fi
         if [ "$record_count" -gt "1" ]; then
-            printf "Sorry, but gad does not support updating multiple records with the same name.\n"
+            printf "Sorry, but gad does not support updating multiple records with the same name.\\n"
             exit 1
         elif [ -z "$record_value" ]; then
             if [ -z "$records_to_create" ]; then
@@ -263,7 +263,7 @@ check() {
             fi
         fi
         if [ "$debug" = "yes" ]; then
-            printf "record = %s\nrecord_value = %s\nrecords_to_create = %s\nrecords_to_update = %s\n\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
+            printf "record = %s\\nrecord_value = %s\\nrecords_to_create = %s\\nrecords_to_update = %s\\n\\n" "$1" "$record_value" "$records_to_create" "$records_to_update"
         fi
         shift
     done
@@ -281,11 +281,11 @@ else
     ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
 fi
 if [ -z "$ext_ip" ]; then
-    printf "Failed to determine external IP address with %s. See above error.\n" "$ext_ip_method"
+    printf "Failed to determine external IP address with %s. See above error.\\n" "$ext_ip_method"
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "IP information:\n\next_ip_method = %s\next_ip = %s\n\n" "$ext_ip_method" "$ext_ip"
+    printf "IP information:\\n\\next_ip_method = %s\\next_ip = %s\\n\\n" "$ext_ip_method" "$ext_ip"
 fi
 
 # Get the active zonefile for the domain
@@ -296,11 +296,11 @@ else
     zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
 fi
 if [ -z "$zone_id" ]; then
-    printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\n"
+    printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\\n"
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "zone_id = %s\n\n" "$zone_id"
+    printf "zone_id = %s\\n\\n" "$zone_id"
 fi
 
 # Check values of records in the active version of the zonefile
@@ -314,34 +314,34 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         new_snapshot_json=`rest "POST" "/zones/${zone_id}/snapshots" ""`
         new_snapshot_id=`get_json_field "uuid" "$new_snapshot_json"`
         if [ "$debug" = "yes" ]; then
-            printf "new_snapshot_id = %s\n\n" "$new_snapshot_id"
+            printf "new_snapshot_id = %s\\n\\n" "$new_snapshot_id"
         fi
         set -f
         update $records_to_update
         create $records_to_create
         set +f
-        printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\n\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+        printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\\n\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
     else
         new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
         if [ "$debug" = "yes" ]; then
-            printf "new_version_id = %s\n\n" "$new_version_id"
+            printf "new_version_id = %s\\n\\n" "$new_version_id"
         fi
         set -f
         update $records_to_update
         create $records_to_create
         set +f
         if [ "$testing" != "yes" ]; then
-            printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
+            printf "Activating version %s of the zonefile for domain %s...\\n\\nopenssl s_client output and domain.zone.version.set() method response:\\n\\n" "$new_version_id" "$domain"
             rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-            printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+            printf "\\nTried to update the following %s records to %s: %s %s\\n\\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
         else
-            printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+            printf "Created version %s of the zonefile for domain %s.\\n\\nTried to update the following %s records to %s: %s %s\\n\\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
         fi
         exit
     fi
 else
     if [ "$verbose" = "yes" ]; then
-        printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"
+        printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\\n" "$ext_ip" "$ext_ip_method" "$records"
     fi
     exit
 fi
