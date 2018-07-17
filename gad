@@ -2,7 +2,8 @@
 
 # Gandi Automatic DNS 1.0.0
 
-# Copyright (c) 2012, 2013, 2014, 2015
+# Copyright (c) 2012, 2013, 2014, 2015, 2016, 2017, 2018 Brian Curran
+# <brian@brianpcurran.com>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,7 +18,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-    printf "\nUsage: $0 [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\nUsage: %s [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
@@ -31,9 +32,11 @@ usage() {
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n"
+RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\n\n" "$0"
     exit 1
 }
+
+# Process parameters
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -73,16 +76,21 @@ if [ "$debug" = "yes" ]; then
     printf "Initial flags:\n\napikey = %s\ndomain = %s\nrecords = %s\nrecord_type = %s\nip_regex = %s\n\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
+# Set API address
+
 if [ "$v5" = "yes" ]; then
     gandi="dns.api.gandi.net:443"
 else
     gandi="rpc.gandi.net:443"
 fi
 
+# Function to call Gandi's v5/LiveDNS REST API
+
 rest() {
     if [ "$debug" = "yes" ]; then
         printf "REST call to endpoint = %s\n\n" "$2" 1>&2
     fi
+    # Throw away third argument to function if verb is GET
     if [ "$1" = "GET" ]; then
         tmp_json=""
     else
@@ -108,7 +116,7 @@ X-Api-Key: ${apikey}
 
 get_json_field() {
     IFS=$'\n'
-    # Handle JSON lists by replacing the first comma within one, grepping for
+    # Handle JSON lists by replacing the first comma within a list, grepping for
     # additional instances of the same pattern, and breaking when the pattern
     # isn't found. Kind of gross but it works.
     updated_json="$2"
@@ -137,54 +145,54 @@ rpc() {
     fi
     tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
-    <methodName>"$1"</methodName>
+    <methodName>${1}</methodName>
     <params>
         <param>
-            <value><string>"$apikey"</string></value>
+            <value><string>${apikey}</string></value>
         </param>"
     shift
     while [ ! -z "$1" ]; do
         if [ "$1" != "struct" ]; then
-            tmp_xml="$tmp_xml
+            tmp_xml="${tmp_xml}
         <param>
-            <value><"$1">"$2"</"$1"></value>
+            <value><${1}>${2}</${1}></value>
         </param>"
         shift; shift
         else
-            tmp_xml="$tmp_xml
+            tmp_xml="${tmp_xml}
         <param>
             <value>
                 <struct>"
             shift;
             while [ ! -z "$1" ]; do
                 if [ "$1" != "struct" ]; then
-                    tmp_xml="$tmp_xml
+                    tmp_xml="${tmp_xml}
                     <member>
-                        <name>"$1"</name>
-                        <value><"$2">"$3"</"$2"></value>
+                        <name>${1}</name>
+                        <value><${2}>${3}</${2}></value>
                     </member>"
                         shift; shift; shift;
                 else
                     break
                 fi
             done
-            tmp_xml="$tmp_xml
+            tmp_xml="${tmp_xml}
                 </struct>
             </value>
         </param>"
         fi
     done
-    tmp_xml="$tmp_xml
+    tmp_xml="${tmp_xml}
     </params>
 </methodCall>"
     tmp_post="POST /xmlrpc/ HTTP/1.0
 User-Agent: Gandi Automatic DNS shell script/0.4
-Host: "$gandi"
+Host: `printf "%s" "$gandi" | cut -d ':' -f 1 -`
 Content-Type: text/xml
 Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 "
-    tmp_message="$tmp_post$tmp_xml"
+    tmp_message="${tmp_post}${tmp_xml}"
     if [ "$debug" = "yes" ]; then
         printf "Sending XML-RPC message tmp_message =\n\n%s\n\n" "$tmp_message" 1>&2
     fi
@@ -245,13 +253,13 @@ check() {
             if [ -z "$records_to_create" ]; then
                 records_to_create="$1"
             else
-                records_to_create="$records_to_create $1"
+                records_to_create="${records_to_create} ${1}"
             fi
         elif [ "$ext_ip" != "$record_value" -o "$force" = "yes" ]; then
             if [ -z "$records_to_update" ]; then
                 records_to_update="$1"
             else
-                records_to_update="$records_to_update $1"
+                records_to_update="${records_to_update} ${1}"
             fi
         fi
         if [ "$debug" = "yes" ]; then
@@ -267,7 +275,7 @@ if [ "$stdin_ip" = "yes" ]; then
     read ext_ip
 elif [ ! -z "$ext_if" ]; then
     ext_ip_method="ifconfig "$ext_if""
-    ext_ip=`ifconfig "$ext_if" | sed -n "s/.*"$inet" \(addr:\)* *"$ip_regex".*/\2/p" | head -1`
+    ext_ip=`ifconfig "$ext_if" | sed -n "s/.*${inet} \(addr:\)* *${ip_regex}.*/\2/p" | head -1`
 else
     ext_ip_method="OpenDNS"
     ext_ip=`dig "$record_type" +short @resolver1.opendns.com myip.opendns.com`
