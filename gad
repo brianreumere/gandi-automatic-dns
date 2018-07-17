@@ -59,7 +59,7 @@ if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
     usage
 fi
 if [ "$v5" = "yes" -a "$testing" = "yes" ]; then
-    printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform."
+    printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform.\\n"
     exit 1
 fi
 if [ "$ipv6" = "yes" ]; then
