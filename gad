@@ -36,7 +36,9 @@ RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) t
     exit 1
 }
 
+#
 # Process parameters
+#
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -71,12 +73,13 @@ else
     ip_regex="\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\)"
     inet="inet"
 fi
-
 if [ "$debug" = "yes" ]; then
     printf "Initial flags:\\n\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
 fi
 
+#
 # Set API address
+#
 
 if [ "$v5" = "yes" ]; then
     gandi="dns.api.gandi.net:443"
@@ -84,7 +87,14 @@ else
     gandi="rpc.gandi.net:443"
 fi
 
+#
 # Function to call Gandi's v5/LiveDNS REST API
+#
+# $1 is the HTTP verb. Only GET, PUT, and POST are used in this script.
+# $2 is the API endpoint
+# $3 is the body of the request. If the verb is GET and a third parameter is
+#    provided, it is ignored.
+#
 
 rest() {
     if [ "$debug" = "yes" ]; then
@@ -114,23 +124,44 @@ X-Api-Key: ${apikey}
     unset tmp_message
 }
 
+#
+# Function to get a specified field from JSON
+#
+# This probably won't work with arbitrary JSON for input, but it works for the
+# JSON that is returned by the Gandi API endpoints that are used by this script
+#
+# $1 is the field that you want to get the value of
+# $2 is the JSON content
+#
+
 get_json_field() {
-    IFS=$'\n'
-    # Handle JSON lists by replacing the first comma within a list, grepping for
-    # additional instances of the same pattern, and breaking when the pattern
-    # isn't found. Kind of gross but it works.
+    # Set $updated_json to the provided JSON content
     updated_json="$2"
     while true; do
+        # Find the first instance of [ and replace content up to the first comma
+        # with the content followed by a space
         updated_json=$(printf "%s" "$updated_json" | sed 's/\(\[[^,]*\),/\1/g')
+        # Check for the pattern again, and restart the loop if grep returns 0
+        # indicating the pattern was found. Otherwise break out of this loop.
         if printf "%s" "$updated_json" | grep -e '\[[^,]*,' > /dev/null; then
             continue
         else
             break
         fi
     done
+    # Set internal field separator to a new line, so our for loop loops over the
+    # records returned on separate lines by the awk command below
+    IFS=$(printf '\n')
+    # Trim out curly braces, anything like a newline, split records on ", " with
+    # awk, replace any leading whitespace with sed, and loop over records.
     for i in $(printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'); do
+        # Find the current field name and value by using ": " as the awk field
+        # separator, and treating field 1 as the name and field 2 as the value.
+        # Also trim out any double quotes and brackets.
         field_name=$(printf "%s" "$i" | awk -F ': ' '{print $1}' | tr -d '"' | tr -d '[]')
         field_value=$(printf "%s" "$i" | awk -F ': ' '{print $2}' | tr -d '"' | tr -d '[]')
+        # If the current field name matches the one we're looking for, print the
+        # value and break out of this loop
         if [ "$field_name" = "$1" ]; then
             printf "%s" "$field_value"
             break
@@ -138,6 +169,17 @@ get_json_field() {
     done
     unset IFS
 }
+
+#
+# Function to call Gandi's legacy XML-RPC API
+#
+# $1 is the API method
+# $2 and all subsequent arguments are datatype/value pairs (for the first pair,
+#    $2 would be the datatype and $3 would be the value) or structs ($2 would
+#    be "struct", $3 would be the name of the struct, $4 would be the datatype,
+#    and $5 would be the value. Structs must come after any datatype/value
+#    pairs.
+#
 
 rpc() {
     if [ "$debug" = "yes" ]; then
@@ -202,6 +244,12 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
     unset tmp_message
 }
 
+#
+# Function to update existing DNS records with a new value
+#
+# $1 is a space-separated list of record names to update
+#
+
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
@@ -221,6 +269,12 @@ update() {
     done
 }
 
+#
+# Function to create new DNS records
+#
+# $1 is a space-separated list of record names to create
+#
+
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
@@ -235,6 +289,13 @@ create() {
         shift
     done
 }
+
+#
+# Function to check existing DNS information and see if it matches the external
+# IP address
+#
+# $1 is a space-separated list of record names to check
+#
 
 check() {
     while [ ! -z "$1" ]; do
@@ -269,7 +330,10 @@ check() {
     done
 }
 
+#
 # Get correct IP address
+#
+
 if [ "$stdin_ip" = "yes" ]; then
     ext_ip_method="standard input"
     read ext_ip
@@ -288,7 +352,10 @@ if [ "$debug" = "yes" ]; then
     printf "IP information:\\n\\next_ip_method = %s\\next_ip = %s\\n\\n" "$ext_ip_method" "$ext_ip"
 fi
 
+#
 # Get the active zonefile for the domain
+#
+
 if [ "$v5" = "yes" ]; then
     domain_json=$(rest "GET" "domains/${domain}")
     zone_id=$(get_json_field "zone_uuid" "$domain_json")
@@ -296,19 +363,25 @@ else
     zone_id=$(rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
 fi
 if [ -z "$zone_id" ]; then
-    printf "No zone_id returned. This is expected with Gandi's test API. Use gad's -t flag for testing.\\n"
+    printf "No zone_id returned. This is expected with Gandi's test API or if you send a LiveDNS API key to Gandi's legacy API. Use gad's -t flag for testing or the -5 flag for LiveDNS.\\n"
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
     printf "zone_id = %s\\n\\n" "$zone_id"
 fi
 
+#
 # Check values of records in the active version of the zonefile
+#
+
 set -f
 check $records
 set +f
 
+#
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
+#
+
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     if [ "$v5" = "yes" ]; then
         new_snapshot_json=$(rest "POST" "/zones/${zone_id}/snapshots" "")
@@ -320,7 +393,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         update $records_to_update
         create $records_to_create
         set +f
-        printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\\n\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+        printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
     else
         new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
