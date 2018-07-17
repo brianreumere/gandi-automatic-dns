@@ -17,12 +17,12 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-    printf "\nUsage: $0 [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\nUsage: $0 [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
--t: If a new version of the zonefile is created, do not activate it
+-t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
 -e: Print debugging information to stdout
 -v: Print information to stdout even if a new zonefile isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
@@ -55,6 +55,10 @@ done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
     usage
 fi
+if [ "$v5" = "yes" -a "$testing" = "yes" ]; then
+    printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform."
+    exit 1
+fi
 if [ "$ipv6" = "yes" ]; then
     record_type="AAAA"
     ip_regex="\([0-9A-Fa-f:]*\)"
@@ -79,7 +83,7 @@ rest() {
     if [ "$debug" = "yes" ]; then
         printf "REST call to endpoint = %s\n\n" "$2" 1>&2
     fi
-    if [ "$1" = 'GET' ]; then
+    if [ "$1" = "GET" ]; then
         tmp_json=""
     else
         tmp_json="$3"
@@ -192,18 +196,34 @@ Content-Length: `printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]"`
 
 update() {
     while [ ! -z "$1" ]; do
-        new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
-        if [ "$debug" = "yes" ]; then
-            printf "new_record_id = %s\n\n" "$new_record_id"
+        if [ "$v5" = "yes" ]; then
+            new_record_json=`rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}"`
+            new_record_message=`get_json_field "message" "$new_record_json"`
+            if [ "$debug" = "yes" ]; then
+                printf "new_record_message = %s\n\n" "$new_record_message"
+            fi
+        else
+            new_record_id=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p'`
+            if [ "$debug" = "yes" ]; then
+                printf "new_record_id = %s\n\n" "$new_record_id"
+            fi
+            rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
         fi
-        rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
         shift
     done
 }
 
 create() {
     while [ ! -z "$1" ]; do
-        rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
+        if [ "$v5" = "yes" ]; then
+            new_record_json=`rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}"`
+            new_record_message=`get_json_field "message" "$new_record_json"`
+            if [ "$debug" = "yes" ]; then
+                printf "new_record_message = %s\n\n" "$new_record_message"
+            fi
+        else
+            rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
+        fi
         shift
     done
 }
@@ -211,8 +231,8 @@ create() {
 check() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            record_json=`rest GET "zones/${zone_id}/records/${1}/${record_type}"`
-            record_value=`get_json_field rrset_values "$record_json"`
+            record_json=`rest "GET" "zones/${zone_id}/records/${1}/${record_type}"`
+            record_value=`get_json_field "rrset_values" "$record_json"`
             record_count=`printf "$record_value" | wc -w`
         else
             record_value=`rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>"$ip_regex".*/\1/p"`
@@ -239,7 +259,6 @@ check() {
         fi
         shift
     done
-    exit
 }
 
 # Get correct IP address
@@ -263,8 +282,8 @@ fi
 
 # Get the active zonefile for the domain
 if [ "$v5" = "yes" ]; then
-    domain_json=`rest GET "domains/${domain}"`
-    zone_id=`get_json_field zone_uuid "$domain_json"`
+    domain_json=`rest "GET" "domains/${domain}"`
+    zone_id=`get_json_field "zone_uuid" "$domain_json"`
 else
     zone_id=`rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
 fi
@@ -280,26 +299,38 @@ fi
 set -f
 check $records
 set +f
-exit
 
 # If there are any mismatches, create a new version of the zonefile, update the incorrect records, and activate it
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
-    new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
-    if [ "$debug" = "yes" ]; then
-        printf "new_version_id = %s\n\n" "$new_version_id"
-    fi
-    set -f
-    update $records_to_update
-    create $records_to_create
-    set +f
-    if [ "$testing" != "yes" ]; then
-        printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
-        rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-        printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+    if [ "$v5" = "yes" ]; then
+        new_snapshot_json=`rest "POST" "/zones/${zone_id}/snapshots" ""`
+        new_snapshot_id=`get_json_field "uuid" "$new_snapshot_json"`
+        if [ "$debug" = "yes" ]; then
+            printf "new_snapshot_id = %s\n\n" "$new_snapshot_id"
+        fi
+        set -f
+        update $records_to_update
+        create $records_to_create
+        set +f
+        printf "Created a new snapshot and tried to update the following live %s records to %s: %s %s\n\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
     else
-        printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+        new_version_id=`rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p'`
+        if [ "$debug" = "yes" ]; then
+            printf "new_version_id = %s\n\n" "$new_version_id"
+        fi
+        set -f
+        update $records_to_update
+        create $records_to_create
+        set +f
+        if [ "$testing" != "yes" ]; then
+            printf "Activating version %s of the zonefile for domain %s...\n\nopenssl s_client output and domain.zone.version.set() method response:\n\n" "$new_version_id" "$domain"
+            rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
+            printf "\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+        else
+            printf "Created version %s of the zonefile for domain %s.\n\nTried to update the following %s records to %s: %s %s\n\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+        fi
+        exit
     fi
-    exit
 else
     if [ "$verbose" = "yes" ]; then
         printf "External IP address %s detected with %s matches records: %s. No update needed. Exiting.\n" "$ext_ip" "$ext_ip_method" "$records"

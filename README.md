@@ -6,7 +6,9 @@ This script is intended to be used as a cron job to maintain the accuracy of mul
 Prerequisites
 =============
 
-Your domain needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. There are instructions on Gandi's wiki to [create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. There is a FAQ regarding this [here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
+If you are on Gandi's legacy DNS platform, your domain needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. There are instructions on Gandi's wiki to [create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. There is a FAQ regarding this [here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
+
+If you are on Gandi's new v5/LiveDNS platform, you do not need to perform these steps.
 
 Requirements
 ============
@@ -23,11 +25,12 @@ Command-line usage
 ==================
 
 ```
-$ gad [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
+-5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
--t: If a new version of the zonefile is created, do not activate it
+-t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
 -e: Print debugging information
 -v: Print information to stdout even if a new zonefile isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
@@ -39,9 +42,9 @@ EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
 ```
 
-Request an API key from Gandi [here](https://www.gandi.net/admin/apixml/).
+For Gandi's legacy platform, request an API key [here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, generate an API key by logging into the [account admin panel](https://account.gandi.net/) and clicking on Security.
 
-rpc() syntax
+Function syntax
 ============
 
 ```
@@ -49,3 +52,9 @@ rpc "methodName" "datatype" "value" "struct" "name" "datatype" "value"
 ```
 
 This function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation](http://doc.rpc.gandi.net/index.html). Note that the APIKEY value from the command line is automatically included as the first parameter.
+
+```
+rest "verb" "apiEndpoint" "body"
+```
+
+This function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://doc.livedns.gandi.net/). The APIKEY value from the command line is automatically included as an HTTP header.
