@@ -98,7 +98,7 @@ fi
 
 rest() {
     if [ "$debug" = "yes" ]; then
-        printf "REST call to endpoint:\\n---\\n%s\\n\\n" "$2" 1>&2
+        printf "REST call to endpoint:\\n---\\n%s\\n---\\n\\n" "$2" 1>&2
     fi
     # Throw away third argument to function if verb is GET
     if [ "$1" != "GET" ]; then
@@ -186,7 +186,7 @@ get_json_field() {
 
 rpc() {
     if [ "$debug" = "yes" ]; then
-        printf "RPC call to methodName:\\n---\\n%s\\n\\n" "$1" 1>&2
+        printf "RPC call to methodName:\\n---\\n%s\\n---\\n\\n" "$1" 1>&2
     fi
     tmp_xml="<?xml version=\"1.0\"?>
 <methodCall>
@@ -259,12 +259,12 @@ update() {
             new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message:\\n---\\n%s\\n\\n" "$new_record_message"
+                printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
             fi
         else
             new_record_id=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">id<" | sed -n 's/.*<string>\([0-9]*\).*/\1/p')
             if [ "$debug" = "yes" ]; then
-                printf "new_record_id:\\n---\\n%s\\n\\n" "$new_record_id"
+                printf "new_record_id:\\n---\\n%s\\n---\\n\\n" "$new_record_id"
             fi
             rpc "domain.zone.record.update" "int" "$zone_id" "int" "$new_version_id" "struct" "id" "int" "$new_record_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
         fi
@@ -284,7 +284,7 @@ create() {
             new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
-                printf "new_record_message:\\n---\\n%s\\n\\n" "$new_record_message"
+                printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
             fi
         else
             rpc "domain.zone.record.add" "int" "$zone_id" "int" "$new_version_id" "struct" "name" "string" "$1" "type" "string" "$record_type" "value" "string" "$ext_ip"
@@ -370,7 +370,7 @@ if [ -z "$zone_id" ]; then
     exit 1
 fi
 if [ "$debug" = "yes" ]; then
-    printf "zone_id:\\n---\\n%s\\n\\n" "$zone_id"
+    printf "zone_id:\\n---\\n%s\\n---\\n\\n" "$zone_id"
 fi
 
 #
@@ -390,7 +390,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         new_snapshot_json=$(rest "POST" "/zones/${zone_id}/snapshots" "")
         new_snapshot_id=$(get_json_field "uuid" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
-            printf "new_snapshot_id:\\n---\\n%s\\n\\n" "$new_snapshot_id"
+            printf "new_snapshot_id:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_id"
         fi
         set -f
         update $records_to_update
@@ -400,7 +400,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     else
         new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
-            printf "new_version_id:\\n---\\n%s\\n\\n" "$new_version_id"
+            printf "new_version_id:\\n---\\n%s\\n---\\n\\n" "$new_version_id"
         fi
         set -f
         update $records_to_update
