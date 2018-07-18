@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 1.0.0
+# Gandi Automatic DNS 1.0.1
 
 # Copyright (c) 2012, 2013, 2014, 2015, 2016, 2017, 2018 Brian Curran
 # <brian@brianpcurran.com>
@@ -18,10 +18,11 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 usage() {
-    printf "\\nUsage: %s [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\\nUsage: %s [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
+-l: If a new record is created, set a custom TTL on it (defaults to 10800)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
 -e: Print debugging information to stdout
@@ -29,6 +30,7 @@ usage() {
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
+TTL: The custom TTL value (in seconds) for newly created records
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
@@ -44,6 +46,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -5) v5="yes";;
         -6) ipv6="yes";;
+        -l) ttl="$2"; shift;;
         -f) force="yes";;
         -t) testing="yes";;
         -e) debug="yes";;
@@ -64,6 +67,9 @@ if [ "$v5" = "yes" -a "$testing" = "yes" ]; then
     printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform.\\n"
     exit 1
 fi
+if [ -z "$ttl" ]; then
+    ttl="10800"
+fi
 if [ "$ipv6" = "yes" ]; then
     record_type="AAAA"
     ip_regex="\([0-9A-Fa-f:]*\)"
@@ -74,7 +80,7 @@ else
     inet="inet"
 fi
 if [ "$debug" = "yes" ]; then
-    printf "Initial flags:\\n---\\napikey = %s\\ndomain = %s\\nrecords = %s\\nrecord_type = %s\\nip_regex = %s\\n---\\n\\n" "$apikey" "$domain" "$records" "$record_type" "$ip_regex"
+    printf "Initial variables:\\n---\\napikey = %s\\ndomain = %s\\nrecords = %s\\nttl = %s\\nrecord_type = %s\\nip_regex = %s\\n---\\n\\n" "$apikey" "$domain" "$records" "$ttl" "$record_type" "$ip_regex"
 fi
 
 #
@@ -281,7 +287,7 @@ update() {
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"10800\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
