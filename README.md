@@ -25,10 +25,11 @@ Command-line usage
 ==================
 
 ```
-$ gad [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
+-l: If a new record is created, set a custom TTL on it (defaults to 10800)
 -f: Force the creation of a new zonefile regardless of IP address discrepancy
 -t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
 -e: Print debugging information
@@ -36,6 +37,7 @@ $ gad [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
+TTL: The custom TTL value (in seconds) for newly created records
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
