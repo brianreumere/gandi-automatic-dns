@@ -22,15 +22,15 @@ usage() {
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
--l: Set a custom TTL on the records (only supported on LiveDNS)
--f: Force the creation of a new zonefile regardless of IP address discrepancy
+-l: Set a custom TTL on records (only supported on LiveDNS)
+-f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
 -t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
 -e: Print debugging information to stdout
--v: Print information to stdout even if a new zonefile isn't needed
+-v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
 
-TTL: The custom TTL value (in seconds) for newly created records
+TTL: The custom TTL value (in seconds) to set on all records
 EXT_IF: The name of your external network interface
 APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
@@ -67,13 +67,9 @@ if [ "$v5" = "yes" -a "$testing" = "yes" ]; then
     printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform.\\n"
     exit 1
 fi
-if [ -z "$ttl" ]; then
-    ttl="10800"
-else
-    if [ "$v5" != "yes" ]; then
-        printf "Setting a custom TTL on records is not supported on Gandi's legacy DNS platform.\\n"
-        exit 1
-    fi
+if [ ! -z "$ttl" -a "$v5" != "yes" ]; then
+    printf "Setting a custom TTL on records is not supported on Gandi's legacy DNS platform.\\n"
+    exit 1
 fi
 if [ "$ipv6" = "yes" ]; then
     record_type="AAAA"
@@ -141,7 +137,8 @@ X-Api-Key: ${apikey}
 # Function to get a specified field from JSON
 #
 # This probably won't work with arbitrary JSON for input, but it works for the
-# JSON that is returned by the Gandi API endpoints that are used by this script
+# JSON that is returned by the Gandi API endpoints that are used by this
+# script. The function returns nothing if the field isn't found.
 #
 # $1 is the field that you want to get the value of
 # $2 is the JSON content
@@ -150,6 +147,9 @@ X-Api-Key: ${apikey}
 get_json_field() {
     # Set $updated_json to the provided JSON content
     updated_json="$2"
+    # This helps handle JSON lists by editing list values to be separated by
+    # spaces instead of commas, so we can split JSON fields on commas with awk
+    # later, and loop over them to find the value we want
     while true; do
         # Find the first instance of [ and replace content up to the first comma
         # with the content followed by a space
@@ -267,7 +267,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\"; \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
@@ -292,7 +292,7 @@ update() {
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
@@ -306,7 +306,7 @@ create() {
 
 #
 # Function to check existing DNS information and see if it matches the external
-# IP address
+# IP address (and TTL in the case of LiveDNS)
 #
 # $1 is a space-separated list of record names to check
 #
@@ -318,6 +318,16 @@ check() {
             record_value=$(get_json_field "rrset_values" "$record_json")
             record_ttl=$(get_json_field "rrset_ttl" "$record_json")
             record_count=$(printf "%s" "$record_value" | wc -w)
+            # If a custom TTL wasn't provided, just set it to the existing one.
+            # If the record TTL is empty (because the record doesn't exist) and
+            # no custom TTL was provided, set a default.
+            if [ -z "$record_ttl" -a -z "$ttl" ]; then
+                new_ttl="10800"
+            elif [ -z "$ttl" ]; then
+                new_ttl="$record_ttl"
+            else
+                new_ttl="$ttl"
+            fi
         else
             record_value=$(rpc "domain.zone.record.list" "int" "$zone_id" "int" "0" "struct" "name" "string" "$1" "type" "string" "$record_type" | grep -A 1 ">value<" | sed -n "s/.*<string>${ip_regex}.*/\1/p")
             record_count=$(printf "%s" "$record_value" | wc -w)
@@ -331,7 +341,7 @@ check() {
             else
                 records_to_create="${records_to_create} ${1}"
             fi
-        elif [ "$ext_ip" != "$record_value" -o "$ttl" != "$record_ttl" -o "$force" = "yes" ]; then
+        elif [ "$ext_ip" != "$record_value" -o "$new_ttl" != "$record_ttl" -o "$force" = "yes" ]; then
             if [ -z "$records_to_update" ]; then
                 records_to_update="$1"
             else
@@ -408,7 +418,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         update $records_to_update
         create $records_to_create
         set +f
-        printf "Created a new snapshot and tried to update the following live %s records to %s with TTL of %s seconds: %s %s\\n" "$record_type" "$ext_ip" "$ttl" "$records_to_update" "$records_to_create"
+        printf "Created a new snapshot and tried to update the following live %s records to %s with TTL of %s seconds: %s %s\\n" "$record_type" "$ext_ip" "$new_ttl" "$records_to_update" "$records_to_create"
     else
         new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
@@ -429,7 +439,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     fi
 else
     if [ "$verbose" = "yes" ]; then
-        printf "External IP address %s detected with %s and TTL value of %s matches records: %s. No update needed. Exiting.\\n" "$ext_ip" "$ttl" "$ext_ip_method" "$records"
+        printf "External IP address %s detected with %s and TTL value of %s matches records: %s. No update needed. Exiting.\\n" "$ext_ip" "$new_ttl" "$ext_ip_method" "$records"
     fi
     exit
 fi
