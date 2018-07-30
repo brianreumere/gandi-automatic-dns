@@ -439,7 +439,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     fi
 else
     if [ "$verbose" = "yes" ]; then
-        printf "External IP address %s detected with %s and TTL value of %s matches records: %s. No update needed. Exiting.\\n" "$ext_ip" "$new_ttl" "$ext_ip_method" "$records"
+        printf "External IP address %s detected with %s and TTL value of %s matches records: %s. No update needed. Exiting.\\n" "$ext_ip" "$ext_ip_method" "$new_ttl" "$records"
     fi
     exit
 fi
