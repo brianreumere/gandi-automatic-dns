@@ -414,11 +414,15 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         if [ "$debug" = "yes" ]; then
             printf "new_snapshot_id:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_id"
         fi
-        set -f
-        update $records_to_update
-        create $records_to_create
-        set +f
-        printf "Created a new snapshot and tried to update the following live %s records to %s with TTL of %s seconds: %s %s\\n" "$record_type" "$ext_ip" "$new_ttl" "$records_to_update" "$records_to_create"
+        if [ "$testing" != "yes" ]; then
+          set -f
+          update $records_to_update
+          create $records_to_create
+          set +f
+          printf "Created a new snapshot and tried to update the following live %s records to %s with TTL of %s seconds: %s %s\\n" "$record_type" "$ext_ip" "$new_ttl" "$records_to_update" "$records_to_create"
+        else
+          printf "Testing mode! Not sending any updates to the LiveDNS API.\\nIn non-testing mode, gad would have tried to update the following live %s records to %s with TTL of %s seconds: %s %s\\n" "$record_type" "$ext_ip" "$new_ttl" "$records_to_update" "$records_to_create"
+        fi
     else
         new_version_id=$(rpc "domain.zone.version.new" "int" "$zone_id" | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
         if [ "$debug" = "yes" ]; then
