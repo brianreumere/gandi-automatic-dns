@@ -24,7 +24,7 @@ usage() {
 -6: Update AAAA record(s) instead of A record(s)
 -l: Set a custom TTL on records (only supported on LiveDNS)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made without this flag.
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
 -e: Print debugging information to stdout
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address

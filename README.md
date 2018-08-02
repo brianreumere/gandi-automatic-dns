@@ -31,7 +31,7 @@ $ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMP
 -6: Update AAAA record(s) instead of A record(s)
 -l: Set a custom TTL on records (only supported on LiveDNS)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
 -e: Print debugging information
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
