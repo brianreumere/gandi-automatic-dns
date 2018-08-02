@@ -24,7 +24,7 @@ usage() {
 -6: Update AAAA record(s) instead of A record(s)
 -l: Set a custom TTL on records (only supported on LiveDNS)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: If a new version of the zonefile is created, do not activate it (not supported on LiveDNS)
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made without this flag.
 -e: Print debugging information to stdout
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
@@ -62,10 +62,6 @@ while [ $# -gt 0 ]; do
 done
 if [ -z "$apikey" -o -z "$domain" -o -z "$records" ]; then
     usage
-fi
-if [ "$v5" = "yes" -a "$testing" = "yes" ]; then
-    printf "Testing by creating a new version without activating it is not supported on Gandi's LiveDNS platform.\\n"
-    exit 1
 fi
 if [ ! -z "$ttl" -a "$v5" != "yes" ]; then
     printf "Setting a custom TTL on records is not supported on Gandi's legacy DNS platform.\\n"
