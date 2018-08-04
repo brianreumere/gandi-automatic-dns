@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 1.2.0
+# Gandi Automatic DNS 1.2.1
 
 # Copyright (c) 2012, 2013, 2014, 2015, 2016, 2017, 2018 Brian Curran
 # <brian@brianpcurran.com>
@@ -108,7 +108,7 @@ rest() {
         tmp_json="$3"
     fi
     tmp_request="${1} /api/v5/${2} HTTP/1.1
-User-Agent: Gandi Automatic DNS shell script/1.2.0
+User-Agent: Gandi Automatic DNS shell script/1.2.1
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: application/json
 Content-Length: $(printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]")
@@ -238,7 +238,7 @@ rpc() {
     </params>
 </methodCall>"
     tmp_post="POST /xmlrpc/ HTTP/1.1
-User-Agent: Gandi Automatic DNS shell script/1.2.0
+User-Agent: Gandi Automatic DNS shell script/1.2.1
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: text/xml
 Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
@@ -263,7 +263,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "PUT" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\"; \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "PUT" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\"; \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
@@ -288,7 +288,7 @@ update() {
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "POST" "/zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "POST" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
@@ -405,7 +405,7 @@ set +f
 
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     if [ "$v5" = "yes" ]; then
-        new_snapshot_json=$(rest "POST" "/zones/${zone_id}/snapshots" "")
+        new_snapshot_json=$(rest "POST" "zones/${zone_id}/snapshots" "")
         new_snapshot_id=$(get_json_field "uuid" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
             printf "new_snapshot_id:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_id"
