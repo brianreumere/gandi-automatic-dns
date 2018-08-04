@@ -263,7 +263,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "PUT" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\"; \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "PUT" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_message:\\n---\\n%s\\n---\\n\\n" "$new_record_message"
