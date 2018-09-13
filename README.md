@@ -16,7 +16,7 @@ Requirements
   * Bourne shell
   * OpenSSL or [LibreSSL](http://www.libressl.org)
 
-If you're using a nutty OS that doesn't include the ifconfig or dig commands you have three options:
+If you're using an OS that doesn't include the ifconfig or dig commands you have three options:
   * Install a package that provides the dig command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
   * Install a package that provides the ifconfig command, commonly net-tools (to use IP discovery via a network interface)
   * Use the -s flag and pipe a custom command that outputs your external IP address to gad, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
