@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Gandi Automatic DNS 1.3.0
+# Gandi Automatic DNS 1.3.1
 
 # Copyright (c) 2012, 2013, 2014, 2015, 2016, 2017, 2018 Brian Curran
 # <brian@brianpcurran.com>
@@ -108,7 +108,7 @@ rest() {
         tmp_json="$3"
     fi
     tmp_request="${1} /api/v5/${2} HTTP/1.1
-User-Agent: Gandi Automatic DNS shell script/1.2.1
+User-Agent: Gandi Automatic DNS shell script/1.3.1
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: application/json
 Content-Length: $(printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]")
@@ -238,7 +238,7 @@ rpc() {
     </params>
 </methodCall>"
     tmp_post="POST /xmlrpc/ HTTP/1.1
-User-Agent: Gandi Automatic DNS shell script/1.2.1
+User-Agent: Gandi Automatic DNS shell script/1.3.1
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: text/xml
 Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
