@@ -19,12 +19,12 @@ Requirements
 If you're using an OS that doesn't include the `ifconfig` or `dig` commands you have three options:
   * Install a package that provides the `dig` command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
   * Install a package that provides the `ifconfig` command, commonly net-tools (to use IP discovery via a network interface)
-  * Use the -s flag and pipe a custom command that outputs your external IP address to gad, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
+  * Use the -s flag and pipe a custom command that outputs your external IP address to `gad`, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
 
 Installation
 ============
 
-The simplest way to install gad is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink for `gad`, and a `~/git` folder that I clone the repository into:
+The simplest way to install `gad` is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink for `gad`, and a `~/git` folder that I clone the repository into:
 
 ```
 git clone https://github.com/brianpcurran/gandi-automatic-dns.git ~/git/gandi-automatic-dns
