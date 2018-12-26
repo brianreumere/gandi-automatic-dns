@@ -24,7 +24,7 @@ If you're using an OS that doesn't include the `ifconfig` or `dig` commands you 
 Installation
 ============
 
-The simplest way to install gad is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink to the repository, and a `~/git` folder that I clone the repository into:
+The simplest way to install gad is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink for `gad`, and a `~/git` folder that I clone the repository into:
 
 ```
 git clone https://github.com/brianpcurran/gandi-automatic-dns.git ~/git/gandi-automatic-dns
@@ -39,9 +39,11 @@ To set up a crontab entry to run `gad` on a schedule, run `crontab -e` and add a
 0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -a APIKEY -d EXAMPLE.COM -r "@ www"
 ```
 
-There is no documentation of rate-limiting on the v5/LiveDNS API, but the legacy API has a limit of 30 requests every 2 seconds, documented [here](https://docs.gandi.net/en/reseller/faq/index.html)], so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes one API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, and 1 API call per record to update or create it if needed).
+There is no documentation of rate-limiting on the v5/LiveDNS API, but the legacy API has a limit of 30 requests every 2 seconds, documented [here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, and 1 API call per record to update or create it if needed).
 
-See the next section for more command-line options that may apply to your use case.
+For Gandi's legacy platform, request an API key [here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, generate an API key by logging into the [account admin panel](https://account.gandi.net/) and clicking on Security.
+
+See the next section for more information about command-line options.
 
 Command-line usage
 ==================
@@ -65,8 +67,6 @@ APIKEY: Your API key provided by Gandi
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
 ```
-
-For Gandi's legacy platform, request an API key [here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, generate an API key by logging into the [account admin panel](https://account.gandi.net/) and clicking on Security.
 
 Function syntax
 ============
