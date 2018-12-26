@@ -16,10 +16,32 @@ Requirements
   * Bourne shell
   * OpenSSL or [LibreSSL](http://www.libressl.org)
 
-If you're using an OS that doesn't include the ifconfig or dig commands you have three options:
-  * Install a package that provides the dig command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
-  * Install a package that provides the ifconfig command, commonly net-tools (to use IP discovery via a network interface)
+If you're using an OS that doesn't include the `ifconfig` or `dig` commands you have three options:
+  * Install a package that provides the `dig` command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
+  * Install a package that provides the `ifconfig` command, commonly net-tools (to use IP discovery via a network interface)
   * Use the -s flag and pipe a custom command that outputs your external IP address to gad, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
+
+Installation
+============
+
+The simplest way to install gad is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink to the repository, and a `~/git` folder that I clone the repository into:
+
+```
+git clone https://github.com/brianpcurran/gandi-automatic-dns.git ~/git/gandi-automatic-dns
+ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
+```
+
+There is a package available for Arch Linux [here](https://aur.archlinux.org/packages/gandi-automatic-dns/), thanks to [@majewsky](https://github.com/majewsky).
+
+To set up a crontab entry to run `gad` on a schedule, run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
+
+```
+0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -a APIKEY -d EXAMPLE.COM -r "@ www"
+```
+
+There is no documentation of rate-limiting on the v5/LiveDNS API, but the legacy API has a limit of 30 requests every 2 seconds, documented [here](https://docs.gandi.net/en/reseller/faq/index.html)], so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes one API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, and 1 API call per record to update or create it if needed).
+
+See the next section for more command-line options that may apply to your use case.
 
 Command-line usage
 ==================
