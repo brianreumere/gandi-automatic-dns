@@ -33,7 +33,7 @@ ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 
 There is a package available for Arch Linux [here](https://aur.archlinux.org/packages/gandi-automatic-dns/), thanks to [@majewsky](https://github.com/majewsky).
 
-To set up a crontab entry to run `gad` on a schedule, store your API key in the file `$HOME/.gandiapi` (run `chmod ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
+To set up a crontab entry to run `gad` on a schedule, store your API key in the file `$HOME/.gandiapi` (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
 
 ```
 0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d EXAMPLE.COM -r "@ www"
@@ -60,6 +60,7 @@ $ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] -d EXA
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
 -i: Use ifconfig instead of OpenDNS to determine external IP address
+-a: Specify a Gandi API key on the command line instead of loading from the ~/.gandiapi file
 
 TTL: The custom TTL value (in seconds) to set on all records
 EXT_IF: The name of your external network interface
