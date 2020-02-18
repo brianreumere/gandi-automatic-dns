@@ -33,10 +33,10 @@ ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 
 There is a package available for Arch Linux [here](https://aur.archlinux.org/packages/gandi-automatic-dns/), thanks to [@majewsky](https://github.com/majewsky).
 
-To set up a crontab entry to run `gad` on a schedule, run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
+To set up a crontab entry to run `gad` on a schedule, store your API key in the file `$HOME/.gandiapi` (run `chmod ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
 
 ```
-0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -a APIKEY -d EXAMPLE.COM -r "@ www"
+0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d EXAMPLE.COM -r "@ www"
 ```
 
 There is no documentation of rate-limiting on the v5/LiveDNS API, but the legacy API has a limit of 30 requests every 2 seconds, documented [here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, and 1 API call per record to update or create it if needed).
@@ -49,7 +49,7 @@ Command-line usage
 ==================
 
 ```
-$ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"
+$ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
@@ -63,7 +63,7 @@ $ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] -a APIKEY -d EXAMP
 
 TTL: The custom TTL value (in seconds) to set on all records
 EXT_IF: The name of your external network interface
-APIKEY: Your API key provided by Gandi
+APIKEY: Your API key provided by Gandi (loaded from the file ~/.gandiapi if not specified)
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
 ```
