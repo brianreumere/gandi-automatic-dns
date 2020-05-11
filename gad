@@ -359,7 +359,11 @@ elif [ ! -z "$ext_if" ]; then
     ext_ip=$(ifconfig "$ext_if" | sed -n "s/.*${inet} \(addr:\)* *${ip_regex}.*/\2/p" | head -1)
 else
     ext_ip_method="OpenDNS"
-    ext_ip=$(dig "$record_type" +short @resolver1.opendns.com myip.opendns.com)
+    if [ "$record_type" = "A" ]; then
+        ext_ip=$(dig -4 "$record_type" +short @resolver1.opendns.com myip.opendns.com)
+    else
+        ext_ip=$(dig "$record_type" +short @resolver1.opendns.com myip.opendns.com)
+    fi
 fi
 if [ -z "$ext_ip" ]; then
     printf "Failed to determine external IP address with %s. See above error.\\n" "$ext_ip_method"
