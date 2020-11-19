@@ -19,7 +19,7 @@ Requirements
 If you're using an OS that doesn't include the `ifconfig` or `dig` commands you have three options:
   * Install a package that provides the `dig` command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
   * Install a package that provides the `ifconfig` command, commonly net-tools (to use IP discovery via a network interface)
-  * Use the `-s`{ flag and pipe a custom command that outputs your external IP address to `gad`, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
+  * Use the `-s` flag and pipe a custom command that outputs your external IP address to `gad`, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
 
 Installation
 ============
@@ -33,15 +33,15 @@ ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 
 [There is a package available for Arch Linux here](https://aur.archlinux.org/packages/gandi-automatic-dns/), thanks to [@majewsky](https://github.com/majewsky).
 
-To set up a crontab entry to run `gad` on a schedule, store your API key in the file `$HOME/.gandiapi` (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
+To set up a crontab entry to run `gad` on a schedule, store your API key in the file `~/.gandiapi` (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
 
 ```
 0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d EXAMPLE.COM -r "@ www"
 ```
 
-There is no documentation of rate-limiting on the v5/LiveDNS API, but [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, and 1 API call per record to update or create it if needed).
+There is no documentation of rate-limiting on the v5/LiveDNS API, but [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes a maximum of 5 API calls to update a single DNS record: 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, 1 API call to create a new version of the zonefile if needed, 1 API call per record to update or create it if needed, and 1 API call to activate the new version of the zonefile).
 
-[For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). [For the new LiveDNS platform, generate an API key by logging into the account admin panel](https://account.gandi.net/) and clicking on Security.
+[For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, generate an API key by logging into the [account admin panel](https://account.gandi.net/) and clicking on Security.
 
 See the next section for more information about command-line options.
 
@@ -76,10 +76,10 @@ Function syntax
 rpc "methodName" "datatype" "value" "struct" "name" "datatype" "value"
 ```
 
-This function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation](http://doc.rpc.gandi.net/index.html). Note that the APIKEY value from the command line is automatically included as the first parameter.
+The `rpc` function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation](http://doc.rpc.gandi.net/index.html). Note that the APIKEY value from the command line is automatically included as the first parameter.
 
 ```
 rest "verb" "apiEndpoint" "body"
 ```
 
-This function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://doc.livedns.gandi.net/). The APIKEY value from the command line is automatically included as an HTTP header.
+The `rest` function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://doc.livedns.gandi.net/). Your Gandi API key from the command line or the `~/.gandiapi` file is automatically included as an HTTP header.
