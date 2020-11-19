@@ -79,7 +79,7 @@ if [ "$v5" = "yes" ]; then
 else
     gandi="rpc.gandi.net:443"
 fi
-gad_version="1.3.3"
+gad_version="1.4.2"
 
 #
 # Function to call Gandi's v5/LiveDNS REST API
