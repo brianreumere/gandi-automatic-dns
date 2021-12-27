@@ -140,10 +140,10 @@ get_json_field() {
     while true; do
         # Find the first instance of [ and replace content up to the first comma
         # with the content followed by a space
-        updated_json=$(printf "%s" "$updated_json" | sed 's/\(\[[^,]*\),/\1/g')
+        updated_json=$(printf "%s" "$updated_json" | sed 's/\(\[[^,]*"\),/\1 /g')
         # Check for the pattern again, and restart the loop if grep returns 0
         # indicating the pattern was found. Otherwise break out of this loop.
-        if printf "%s" "$updated_json" | grep -e '\[[^,]*,' > /dev/null; then
+        if printf "%s" "$updated_json" | grep -e '\[[^,]*",' > /dev/null; then
             continue
         else
             break
@@ -308,6 +308,9 @@ check() {
                 printf "record_json:\\n---\\n%s\\n---\\n\\n" "$record_json"
             fi
             record_value=$(get_json_field "rrset_values" "$record_json")
+            if [ "$debug" = "yes" ]; then
+                printf "record_value:\\n---\\n%s\\n---\\n\\n" "$record_value"
+            fi
             record_ttl=$(get_json_field "rrset_ttl" "$record_json")
             record_count=$(printf "%s" "$record_value" | wc -w)
             # If a custom TTL wasn't provided, just set it to the existing one.
