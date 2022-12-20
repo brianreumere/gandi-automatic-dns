@@ -39,6 +39,8 @@ To set up a crontab entry to run `gad` on a schedule, store your API key in the 
 0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d EXAMPLE.COM -r "@ www"
 ```
 
+If you have [issues with the `openssl s_client` command hanging](https://github.com/brianreumere/gandi-automatic-dns/issues/31), and you have access to the `timeout` utility from coreutils, you can precede the path to the `gad` command with something like `timeout -k 10s 60s` (to send a `TERM` signal after 60 seconds and a `KILL` signal 10 seconds later if it's still running).
+
 There is no documentation of rate-limiting on the v5/LiveDNS API, but [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes a maximum of 5 API calls to update a single DNS record: 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, 1 API call to create a new version of the zonefile if needed, 1 API call per record to update or create it if needed, and 1 API call to activate the new version of the zonefile).
 
 [For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, generate an API key by logging into the [account admin panel](https://account.gandi.net/) and clicking on Security.
