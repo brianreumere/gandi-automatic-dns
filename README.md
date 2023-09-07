@@ -27,7 +27,7 @@ Installation
 The simplest way to install `gad` is to clone this repository. You can optionally add the repository folder to your `PATH` environment variable to make running `gad` easier, but you should specify its full path when creating a crontab entry. Personally, I have a `~/bin` folder that is already in my `PATH` where I create a symlink for `gad`, and a `~/git` folder that I clone the repository into:
 
 ```
-git clone https://github.com/brianpcurran/gandi-automatic-dns.git ~/git/gandi-automatic-dns
+git clone https://github.com/brianreumere/gandi-automatic-dns.git ~/git/gandi-automatic-dns
 ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 ```
 
