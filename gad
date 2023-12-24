@@ -13,7 +13,8 @@ usage() {
 -s: Use stdin instead of OpenDNS to determine external IP address
 
 -i EXT_IF: The name of your external network interface (optional, if provided uses ifconfig instead of OpenDNS to determine external IP address
--a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from the file ~/.gandiapi if not specified)
+-p KEYFILE: Path to the file that contains your PAT or API key (defaults to ~/.gandiapi)
+-a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from a file if not specified)
 -l TTL: Set a custom TTL on records (optional, and only supported on LiveDNS)
 -d EXAMPLE.COM: The domain name whose active zonefile will be updated (required)
 -r RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create (required)
@@ -45,6 +46,7 @@ while [ $# -gt 0 ]; do
         -v) verbose="yes";;
         -s) stdin_ip="yes";;
         -i) ext_if="$2"; shift;;
+        -p) keyfile="$2"; shift;;
         -a) apikey="$2"; shift;;
         -d) domain="$2"; shift;;
         -r) records="$2"; shift;;
@@ -55,9 +57,16 @@ done
 if [ -z "$domain" -o -z "$records" -o "$help" = "yes" ]; then
     usage
 fi
+if [ ! -z "$apikey" -a ! -z "$keyfile" ]; then
+    printf "The -p and -a flags are incompatible. Only specify a PAT or API key using one method.\\n"
+    exit 1
+fi
 if [ -z "$apikey" ]; then
-  if [ -f "${HOME}/.gandiapi" ]; then
-    apikey=$(cat "${HOME}/.gandiapi")
+  if [ -z "$keyfile" ]; then
+    keyfile="${HOME}/.gandiapi"
+  fi
+  if [ -f "$keyfile" ]; then
+    apikey=$(cat "$keyfile")
   else
     usage
   fi

@@ -47,7 +47,7 @@ Command-line usage
 Run `gad` with no options or `gad -h` to view this usage info from the command line.
 
 ```
-Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
+Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-p KEYFILE] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -h: Print this usage info and exit
 -x: Use Gandi's legacy XML-RPC API
@@ -59,7 +59,8 @@ Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l T
 -s: Use stdin instead of OpenDNS to determine external IP address
 
 -i EXT_IF: The name of your external network interface (optional, if provided uses ifconfig instead of OpenDNS to determine external IP address
--a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from the file ~/.gandiapi if not specified)
+-p KEYFILE: Path to the file that contains your PAT or API key (defaults to ~/.gandiapi)
+-a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from a file if not specified)
 -l TTL: Set a custom TTL on records (optional, and only supported on LiveDNS)
 -d EXAMPLE.COM: The domain name whose active zonefile will be updated (required)
 -r RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create (required)
@@ -78,4 +79,4 @@ The `rpc` function can accept an arbitrary number of datatype/value pairs and st
 rest "verb" "apiEndpoint" "body"
 ```
 
-The `rest` function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://api.gandi.net/docs/livedns/). Your PAT from the command line or the `~/.gandiapi` file is automatically included in the `Authorization` header.
+The `rest` function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://api.gandi.net/docs/livedns/). Your PAT from the command line, the file specified by the `-p` flag, or the `~/.gandiapi` file is automatically included in the `Authorization` header.
