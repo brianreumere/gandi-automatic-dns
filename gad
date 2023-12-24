@@ -3,6 +3,7 @@
 usage() {
     printf "\\nUsage: %s [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
+-h: Print this usage info and exit
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
 -l: Set a custom TTL on records (only supported on LiveDNS)
@@ -17,9 +18,17 @@ TTL: The custom TTL value (in seconds) to set on all records
 EXT_IF: The name of your external network interface
 APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (loaded from the file ~/.gandiapi if not specified)
 EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\\n\\n" "$0"
+RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
+
+gad version: ${gad_version}\\n\\n" "$0"
     exit 1
 }
+
+#
+# Set script version
+#
+
+gad_version="2.0.0"
 
 #
 # Process parameters
@@ -27,6 +36,7 @@ RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) t
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        -h) help="yes";;
         -5) v5="yes";;
         -6) ipv6="yes";;
         -l) ttl="$2"; shift;;
@@ -43,7 +53,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-if [ -z "$domain" -o -z "$records" ]; then
+if [ -z "$domain" -o -z "$records" -o "$help" = "yes" ]; then
     usage
 fi
 if [ -z "$apikey" ]; then
@@ -71,7 +81,7 @@ if [ "$debug" = "yes" ]; then
 fi
 
 #
-# Set API address and script version
+# Set API address
 #
 
 if [ "$v5" = "yes" ]; then
@@ -79,7 +89,6 @@ if [ "$v5" = "yes" ]; then
 else
     gandi="rpc.gandi.net:443"
 fi
-gad_version="2.0.0"
 
 #
 # Function to call Gandi's v5/LiveDNS REST API
