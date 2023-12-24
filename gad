@@ -15,7 +15,7 @@ usage() {
 
 TTL: The custom TTL value (in seconds) to set on all records
 EXT_IF: The name of your external network interface
-APIKEY: Your API key provided by Gandi (loaded from the file ~/.gandiapi if not specified)
+APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (loaded from the file ~/.gandiapi if not specified)
 EXAMPLE.COM: The domain name whose active zonefile will be updated
 RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create\\n\\n" "$0"
     exit 1
@@ -75,11 +75,11 @@ fi
 #
 
 if [ "$v5" = "yes" ]; then
-    gandi="dns.api.gandi.net:443"
+    gandi="api.gandi.net:443"
 else
     gandi="rpc.gandi.net:443"
 fi
-gad_version="1.4.2"
+gad_version="2.0.0"
 
 #
 # Function to call Gandi's v5/LiveDNS REST API
@@ -98,12 +98,12 @@ rest() {
     if [ "$1" != "GET" ]; then
         tmp_json="$3"
     fi
-    tmp_request="${1} /api/v5/${2} HTTP/1.1
+    tmp_request="${1} /v5/livedns/${2} HTTP/1.1
 User-Agent: Gandi Automatic DNS shell script/${gad_version}
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
 Content-Type: application/json
 Content-Length: $(printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]")
-X-Api-Key: ${apikey}
+Authorization: Bearer ${apikey}
 
 "
     if [ "$1" != "GET" ]; then
@@ -153,14 +153,15 @@ get_json_field() {
     # records returned on separate lines by the awk command below
     IFS='
 '
-    # Trim out curly braces, anything like a newline, split records on ", " with
-    # awk, replace any leading whitespace with sed, and loop over records.
-    for i in $(printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", "}{print $0}' | sed 's/^ //'); do
+    # Trim out curly braces, anything like a newline, split records on "," or
+    # ", " with awk, replace any leading whitespace with sed, and loop over
+    # records.
+    for i in $(printf "%s" "$updated_json" | tr -d '{}\t\n\r\f' | awk 'BEGIN{RS=", ?"}{print $0}' | sed 's/^ //'); do
         # Find the current field name and value by using ": " as the awk field
         # separator, and treating field 1 as the name and field 2 as the value.
         # Also trim out any double quotes and brackets.
-        field_name=$(printf "%s" "$i" | awk -F ': ' '{print $1}' | tr -d '"' | tr -d '[]')
-        field_value=$(printf "%s" "$i" | awk -F ': ' '{print $2}' | tr -d '"' | tr -d '[]')
+        field_name=$(printf "%s" "$i" | awk -F ': ?' '{print $1}' | tr -d '"' | tr -d '[]')
+        field_value=$(printf "%s" "$i" | awk -F ': ?' '{print $2}' | tr -d '"' | tr -d '[]')
         # If the current field name matches the one we're looking for, print the
         # value and break out of this loop
         if [ "$field_name" = "$1" ]; then
@@ -254,7 +255,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 update() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "PUT" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "PUT" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_json:\\n---\\n%s\\n---\\n\\n" "$new_record_json"
@@ -280,7 +281,7 @@ update() {
 create() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            new_record_json=$(rest "POST" "zones/${zone_id}/records/${1}/${record_type}" "{\"rrset_ttl\": \"${new_ttl}\", \"rrset_values\": [\"${ext_ip}\"]}")
+            new_record_json=$(rest "POST" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_json:\\n---\\n%s\\n---\\n\\n" "$new_record_json"
@@ -303,7 +304,7 @@ create() {
 check() {
     while [ ! -z "$1" ]; do
         if [ "$v5" = "yes" ]; then
-            record_json=$(rest "GET" "zones/${zone_id}/records/${1}/${record_type}")
+            record_json=$(rest "GET" "domains/${domain}/records/${1}/${record_type}")
             if [ "$debug" = "yes" ]; then
                 printf "record_json:\\n---\\n%s\\n---\\n\\n" "$record_json"
             fi
@@ -377,24 +378,25 @@ if [ "$debug" = "yes" ]; then
 fi
 
 #
-# Get the active zonefile for the domain
+# Get the active zonefile for the domain (not required for v5)
 #
 
 if [ "$v5" = "yes" ]; then
-    domain_json=$(rest "GET" "domains/${domain}")
     if [ "$debug" = "yes" ]; then
-        printf "domain_json:\\n---\\n%s\\n---\\n\\n" "$domain_json"
+        printf "Using v5/LiveDNS. No zone ID required.\\n"
     fi
-    zone_id=$(get_json_field "zone_uuid" "$domain_json")
 else
+    if [ "$debug" = "yes" ]; then
+        printf "Using legacy API. Looking up active zone ID.\\n"
+    fi
     zone_id=$(rpc "domain.info" "string" "$domain" | grep -A 1 zone_id | sed -n 's/.*<int>\([0-9]*\).*/\1/p')
-fi
-if [ -z "$zone_id" ]; then
-    printf "No zone_id returned. This is expected with Gandi's test API or if you send a LiveDNS API key to Gandi's legacy API. Use gad's -t flag for testing or the -5 flag for LiveDNS.\\n"
-    exit 1
-fi
-if [ "$debug" = "yes" ]; then
-    printf "zone_id:\\n---\\n%s\\n---\\n\\n" "$zone_id"
+    if [ -z "$zone_id" ]; then
+        printf "No zone_id returned. This is expected with Gandi's test API or if you send a LiveDNS API key or PAT to Gandi's legacy API. Use gad's -t flag for testing or the -5 flag for LiveDNS.\\n"
+        exit 1
+    fi
+    if [ "$debug" = "yes" ]; then
+        printf "zone_id:\\n---\\n%s\\n---\\n\\n" "$zone_id"
+    fi
 fi
 
 #
@@ -411,8 +413,8 @@ set +f
 
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     if [ "$v5" = "yes" ]; then
-        new_snapshot_json=$(rest "POST" "zones/${zone_id}/snapshots" "")
-        new_snapshot_id=$(get_json_field "uuid" "$new_snapshot_json")
+        new_snapshot_json=$(rest "POST" "domains/${domain}/snapshots" "")
+        new_snapshot_id=$(get_json_field "id" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
             printf "new_snapshot_json:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_json"
             printf "new_snapshot_id:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_id"
@@ -438,7 +440,7 @@ if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
         if [ "$testing" != "yes" ]; then
             printf "Activating version %s of the zonefile for domain %s...\\n\\nopenssl s_client output and domain.zone.version.set() method response:\\n\\n" "$new_version_id" "$domain"
             rpc "domain.zone.version.set" "int" "$zone_id" "int" "$new_version_id"
-            printf "\\nTried to update the following %s records to %s: %s %s\\n\\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of "1" means success).\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
+            printf "\\nTried to update the following %s records to %s: %s %s\\n\\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful, or look at the methodResponse from domain.zone.version.set() above (a response of \"1\" means success).\\n" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
         else
             printf "Created version %s of the zonefile for domain %s.\\n\\nTried to update the following %s records to %s: %s %s\\n\\nThere is no error checking on the RPCs so check the web interface if you want to be sure the update was successful.\\n" "$new_version_id" "$domain" "$record_type" "$ext_ip" "$records_to_update" "$records_to_create"
         fi
