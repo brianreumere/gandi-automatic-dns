@@ -191,6 +191,23 @@ get_json_field() {
 }
 
 #
+# Function to check for errors
+#
+# $1 is the JSON returned by the API
+#
+
+check_http_error() {
+    json="$1"
+    code=$(get_json_field "code" "$json")
+    if [ ! -z "$code" ]; then
+        case "$code" in
+            401) printf "Error: Received 401 Unauthorized from the Gandi API.\\n\\nFull response: %s\\n" "$json"; exit 1;;
+            403) printf "Error: Received 403 Forbidden from the Gandi API.\\n\\nFull response: %s\\n" "$json"; exit 1;;
+        esac
+    fi
+}
+
+#
 # Function to call Gandi's legacy XML-RPC API
 #
 # $1 is the API method
@@ -274,6 +291,7 @@ update() {
     while [ ! -z "$1" ]; do
         if [ "$legacy" != "yes" ]; then
             new_record_json=$(rest "PUT" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
+            check_http_error "$new_record_json"
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_json:\\n---\\n%s\\n---\\n\\n" "$new_record_json"
@@ -300,6 +318,7 @@ create() {
     while [ ! -z "$1" ]; do
         if [ "$legacy" != "yes" ]; then
             new_record_json=$(rest "POST" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
+            check_http_error "$new_record_json"
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
                 printf "new_record_json:\\n---\\n%s\\n---\\n\\n" "$new_record_json"
@@ -323,6 +342,7 @@ check() {
     while [ ! -z "$1" ]; do
         if [ "$legacy" != "yes" ]; then
             record_json=$(rest "GET" "domains/${domain}/records/${1}/${record_type}")
+            check_http_error "$record_json"
             if [ "$debug" = "yes" ]; then
                 printf "record_json:\\n---\\n%s\\n---\\n\\n" "$record_json"
             fi
@@ -432,6 +452,7 @@ set +f
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
     if [ "$legacy" != "yes" ]; then
         new_snapshot_json=$(rest "POST" "domains/${domain}/snapshots" "")
+        check_http_error "$new_snapshot_json"
         new_snapshot_id=$(get_json_field "id" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then
             printf "new_snapshot_json:\\n---\\n%s\\n---\\n\\n" "$new_snapshot_json"
