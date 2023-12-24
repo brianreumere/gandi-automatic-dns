@@ -50,26 +50,7 @@ See the next section for more information about command-line options.
 Command-line usage
 ==================
 
-```
-$ gad [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] -d EXAMPLE.COM -r "RECORD-NAMES"
-
--5: Use Gandi's new LiveDNS platform
--6: Update AAAA record(s) instead of A record(s)
--l: Set a custom TTL on records (only supported on LiveDNS)
--f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
--e: Print debugging information
--v: Print information to stdout even if an update isn't needed
--s: Use stdin instead of OpenDNS to determine external IP address
--i: Use ifconfig instead of OpenDNS to determine external IP address
--a: Specify a Gandi API key on the command line instead of loading from the ~/.gandiapi file
-
-TTL: The custom TTL value (in seconds) to set on all records
-EXT_IF: The name of your external network interface
-APIKEY: Your API key provided by Gandi (loaded from the file ~/.gandiapi if not specified)
-EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
-```
+Run `gad` with no options or `gad -h` to view usage info.
 
 Function syntax
 ============
