@@ -52,10 +52,10 @@ Run `gad` with no options or `gad -h` to view this usage info from the command l
 Usage: gad [-h] [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -h: Print this usage info and exit
--5: Use Gandi's new LiveDNS platform
+-5: Use Gandi's newer LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it; on LiveDNS, just print the updates that would be made if this flag wasn't used
 -e: Print debugging information to stdout
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
