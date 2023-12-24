@@ -6,7 +6,7 @@ This script is intended to be used as a cron job to maintain the accuracy of mul
 Prerequisites
 =============
 
-For Gandi's LiveDNS platform, you must generate a personal access token (PAT) to authenticate. [API keys are deprecated](https://api.gandi.net/docs/changelog/). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
+For Gandi's LiveDNS platform, you must generate a personal access token (PAT) to authenticate. [API keys are deprecated](https://api.gandi.net/docs/changelog/) and are not supported by `gad`. Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
 
 [If you are on Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). Your domain also needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. [There are instructions on Gandi's wiki to create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. [There is a FAQ regarding this here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
 
