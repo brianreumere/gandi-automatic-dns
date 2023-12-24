@@ -68,7 +68,8 @@ if [ -z "$apikey" ]; then
   if [ -f "$keyfile" ]; then
     apikey=$(cat "$keyfile")
   else
-    usage
+    printf "Could not load PAT or API key from -a flag or %s.\\n" "$keyfile"
+    exit 1
   fi
 fi
 if [ ! -z "$ttl" -a "$legacy" = "yes" ]; then
