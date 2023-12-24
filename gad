@@ -1,10 +1,10 @@
 #!/bin/sh
 
 usage() {
-    printf "\\nUsage: %s [-h] [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\\nUsage: %s [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -h: Print this usage info and exit
--5: Use Gandi's newer LiveDNS platform
+-x: Use Gandi's legacy XML-RPC API
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
 -t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it; on LiveDNS, just print the updates that would be made if this flag wasn't used.
@@ -35,7 +35,8 @@ gad_version="2.0.0"
 while [ $# -gt 0 ]; do
     case "$1" in
         -h) help="yes";;
-        -5) v5="yes";;
+        -x) legacy="yes";;
+        -5) legacy="no";;
         -6) ipv6="yes";;
         -l) ttl="$2"; shift;;
         -f) force="yes";;
@@ -61,7 +62,7 @@ if [ -z "$apikey" ]; then
     usage
   fi
 fi
-if [ ! -z "$ttl" -a "$v5" != "yes" ]; then
+if [ ! -z "$ttl" -a "$legacy" = "yes" ]; then
     printf "Setting a custom TTL on records is not supported on Gandi's legacy DNS platform.\\n"
     exit 1
 fi
@@ -82,7 +83,7 @@ fi
 # Set API address
 #
 
-if [ "$v5" = "yes" ]; then
+if [ "$legacy" != "yes" ]; then
     gandi="api.gandi.net:443"
 else
     gandi="rpc.gandi.net:443"
@@ -262,7 +263,7 @@ Content-Length: $(printf "%s" "$tmp_xml" | wc -c | tr -d "[:space:]")
 
 update() {
     while [ ! -z "$1" ]; do
-        if [ "$v5" = "yes" ]; then
+        if [ "$legacy" != "yes" ]; then
             new_record_json=$(rest "PUT" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
@@ -288,7 +289,7 @@ update() {
 
 create() {
     while [ ! -z "$1" ]; do
-        if [ "$v5" = "yes" ]; then
+        if [ "$legacy" != "yes" ]; then
             new_record_json=$(rest "POST" "domains/${domain}/records/${1}/${record_type}" "{\"rrset_ttl\": ${new_ttl}, \"rrset_values\": [\"${ext_ip}\"]}")
             new_record_message=$(get_json_field "message" "$new_record_json")
             if [ "$debug" = "yes" ]; then
@@ -311,7 +312,7 @@ create() {
 
 check() {
     while [ ! -z "$1" ]; do
-        if [ "$v5" = "yes" ]; then
+        if [ "$legacy" != "yes" ]; then
             record_json=$(rest "GET" "domains/${domain}/records/${1}/${record_type}")
             if [ "$debug" = "yes" ]; then
                 printf "record_json:\\n---\\n%s\\n---\\n\\n" "$record_json"
@@ -389,7 +390,7 @@ fi
 # Get the active zonefile for the domain (not required for v5)
 #
 
-if [ "$v5" = "yes" ]; then
+if [ "$legacy" != "yes" ]; then
     if [ "$debug" = "yes" ]; then
         printf "Using v5/LiveDNS. No zone ID required.\\n"
     fi
@@ -420,7 +421,7 @@ set +f
 #
 
 if [ ! -z "$records_to_update" -o ! -z "$records_to_create" ]; then
-    if [ "$v5" = "yes" ]; then
+    if [ "$legacy" != "yes" ]; then
         new_snapshot_json=$(rest "POST" "domains/${domain}/snapshots" "")
         new_snapshot_id=$(get_json_field "id" "$new_snapshot_json")
         if [ "$debug" = "yes" ]; then

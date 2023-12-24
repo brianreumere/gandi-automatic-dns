@@ -6,11 +6,9 @@ This script is intended to be used as a cron job to maintain the accuracy of mul
 Prerequisites
 =============
 
-If you are on Gandi's legacy DNS platform, your domain needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. [There are instructions on Gandi's wiki to create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. [There is a FAQ regarding this here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
+For Gandi's LiveDNS platform, you must generate a personal access token (PAT) to authenticate. [API keys are deprecated](https://api.gandi.net/docs/changelog/). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
 
-If you are on Gandi's newer v5/LiveDNS platform, you do not need to perform these steps.
-
-[For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, [API keys are deprecated](https://api.gandi.net/docs/changelog/) in favor of personal access tokens (PATs). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
+[If you are on Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). Your domain also needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. [There are instructions on Gandi's wiki to create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. [There is a FAQ regarding this here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
 
 Requirements
 ============
@@ -49,13 +47,13 @@ Command-line usage
 Run `gad` with no options or `gad -h` to view this usage info from the command line.
 
 ```
-Usage: gad [-h] [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
+Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -h: Print this usage info and exit
--5: Use Gandi's newer LiveDNS platform
+-x: Use Gandi's legacy XML-RPC API
 -6: Update AAAA record(s) instead of A record(s)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
--t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it; on LiveDNS, just print the updates that would be made if this flag wasn't used
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it; on LiveDNS, just print the updates that would be made if this flag wasn't used.
 -e: Print debugging information to stdout
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
