@@ -6,9 +6,9 @@ This script is intended to be used as a cron job to maintain the accuracy of mul
 Prerequisites
 =============
 
-For Gandi's LiveDNS platform, you must generate a personal access token (PAT) to authenticate. [API keys are deprecated](https://api.gandi.net/docs/changelog/) and are not supported by `gad`. Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
+For Gandi's LiveDNS platform, you must generate a personal access token (PAT) to authenticate. [API keys are deprecated](https://api.gandi.net/docs/changelog/) and are not supported by `gad` (if you'd like to fully migrate to PATs, you should delete any API keys from the authentication options of your [account settings](https://account.gandi.net/en). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking the button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain names that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions.
 
-[If you are on Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). Your domain also needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy. [There are instructions on Gandi's wiki to create an editable zone](http://wiki.gandi.net/en/dns/zone/edit). You only need to perform the first two steps. [There is a FAQ regarding this here](http://wiki.gandi.net/en/dns/faq#cannot_change_zone_file).
+[If you are on Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). Your domain also needs to be using a zone that you are allowed to edit. The default Gandi zone does not allow editing, so you must create a copy.
 
 Requirements
 ============
@@ -17,8 +17,8 @@ Requirements
   * OpenSSL or [LibreSSL](http://www.libressl.org)
 
 If you're using an OS that doesn't include the `ifconfig` or `dig` commands you have three options:
-  * Install a package that provides the `dig` command, commonly bind-tools or dnsutils (to use IP discovery via OpenDNS)
-  * Install a package that provides the `ifconfig` command, commonly net-tools (to use IP discovery via a network interface)
+  * Install a package that provides the `dig` command, commonly `bind-tools` or `dnsutils` (to use IP discovery via OpenDNS)
+  * Install a package that provides the `ifconfig` command, commonly `net-tools` (to use IP discovery via a network interface)
   * Use the `-s` flag and pipe a custom command that outputs your external IP address to `gad`, e.g., ```curl ipinfo.io/ip | gad -s -a APIKEY -d EXAMPLE.COM -r "RECORD-NAMES"```
 
 Installation
@@ -31,15 +31,15 @@ git clone https://github.com/brianreumere/gandi-automatic-dns.git ~/git/gandi-au
 ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 ```
 
-To set up a crontab entry to run `gad` on a schedule, store your API key in the file `~/.gandiapi` (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of your domain):
+To set up a crontab entry to run `gad` on a schedule, store your API key in the `~/.gandiapi` file (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of the domain `example.net`):
 
 ```
-0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d EXAMPLE.COM -r "@ www"
+0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d example.net -r "@ www"
 ```
 
-If you have [issues with the `openssl s_client` command hanging](https://github.com/brianreumere/gandi-automatic-dns/issues/31), and you have access to the `timeout` utility from coreutils, you can precede the path to the `gad` command with something like `timeout -k 10s 60s` (to send a `TERM` signal after 60 seconds and a `KILL` signal 10 seconds later if it's still running).
+If you have [issues with the `openssl s_client` command hanging](https://github.com/brianreumere/gandi-automatic-dns/issues/31), and you have access to the `timeout` utility from GNU coreutils, you can precede the path to the `gad` command with something like `timeout -k 10s 60s` (to send a `TERM` signal after 60 seconds and a `KILL` signal 10 seconds later if it's still running).
 
-The v5/LiveDNS API [allows up to 1000 requests per minute](https://api.gandi.net/docs/reference/) and [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (when no record updates are required, `gad` makes one API call per record, and one additional call when using the legacy API to get the active zone ID).
+The v5/LiveDNS API [allows up to 1000 requests per minute](https://api.gandi.net/docs/reference/) and [the legacy API has a limit of 30 requests every 2 seconds](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (when no record updates are required, `gad` makes one API call per record, and one additional call when using the legacy API to get the active zone ID).
 
 Command-line usage
 ==================
@@ -72,7 +72,7 @@ Function syntax
 rpc "methodName" "datatype" "value" "struct" "name" "datatype" "value"
 ```
 
-The `rpc` function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [Gandi API documentation](http://doc.rpc.gandi.net/index.html). Note that the APIKEY value from the command line is automatically included as the first parameter.
+The `rpc` function can accept an arbitrary number of datatype/value pairs and structs and their member name/datatype/value tuples. structs _must_ be last! Valid method names can be found in the [legacy XML-RPC API documentation](http://doc.rpc.gandi.net/index.html). Note that the `APIKEY` value from the command line is automatically included as the first parameter.
 
 ```
 rest "verb" "apiEndpoint" "body"
