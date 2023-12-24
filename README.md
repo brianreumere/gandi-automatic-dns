@@ -80,4 +80,4 @@ The `rpc` function can accept an arbitrary number of datatype/value pairs and st
 rest "verb" "apiEndpoint" "body"
 ```
 
-The `rest` function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://doc.livedns.gandi.net/). Your Gandi API key from the command line or the `~/.gandiapi` file is automatically included as an HTTP header.
+The `rest` function can call arbitrary endpoints of Gandi's LiveDNS REST API. If the verb is not `GET`, the function expects a third parameter to use as the body of the `POST` or `PUT` request. Valid API endpoints can be found in the [LiveDNS API documentation](https://api.gandi.net/docs/livedns/). Your PAT from the command line or the `~/.gandiapi` file is automatically included in the `Authorization` header.
