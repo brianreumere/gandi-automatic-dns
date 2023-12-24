@@ -1,24 +1,22 @@
 #!/bin/sh
 
 usage() {
-    printf "\\nUsage: %s [-5] [-6] [-l TTL] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] -d EXAMPLE.COM -r \"RECORD-NAMES\"
+    printf "\\nUsage: %s [-h] [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r \"RECORD-NAMES\"
 
 -h: Print this usage info and exit
 -5: Use Gandi's new LiveDNS platform
 -6: Update AAAA record(s) instead of A record(s)
--l: Set a custom TTL on records (only supported on LiveDNS)
 -f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
 -t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
 -e: Print debugging information to stdout
 -v: Print information to stdout even if an update isn't needed
 -s: Use stdin instead of OpenDNS to determine external IP address
--i: Use ifconfig instead of OpenDNS to determine external IP address
 
-TTL: The custom TTL value (in seconds) to set on all records
-EXT_IF: The name of your external network interface
-APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (loaded from the file ~/.gandiapi if not specified)
-EXAMPLE.COM: The domain name whose active zonefile will be updated
-RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create
+-i EXT_IF: The name of your external network interface (optional, if provided uses ifconfig instead of OpenDNS to determine external IP address
+-a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from the file ~/.gandiapi if not specified)
+-l TTL: Set a custom TTL on records (optional, and only supported on LiveDNS)
+-d EXAMPLE.COM: The domain name whose active zonefile will be updated (required)
+-r RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create (required)
 
 gad version: ${gad_version}\\n\\n" "$0"
     exit 1
