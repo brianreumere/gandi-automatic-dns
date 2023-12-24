@@ -108,6 +108,7 @@ rest() {
     tmp_request="${1} /v5/livedns/${2} HTTP/1.1
 User-Agent: Gandi Automatic DNS shell script/${gad_version}
 Host: $(printf "%s" "$gandi" | cut -d ':' -f 1 -)
+Connection: close
 Content-Type: application/json
 Content-Length: $(printf "%s" "$tmp_json" | wc -c | tr -d "[:space:]")
 Authorization: Bearer ${apikey}
