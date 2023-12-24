@@ -179,8 +179,8 @@ get_json_field() {
         # Find the current field name and value by using ": " as the awk field
         # separator, and treating field 1 as the name and field 2 as the value.
         # Also trim out any double quotes and brackets.
-        field_name=$(printf "%s" "$i" | awk -F ': ?' '{print $1}' | tr -d '"' | tr -d '[]')
-        field_value=$(printf "%s" "$i" | awk -F ': ?' '{print $2}' | tr -d '"' | tr -d '[]')
+        field_name=$(printf "%s" "$i" | awk -F '": ?["\[]' '{print $1}' | tr -d '"' | tr -d '[]')
+        field_value=$(printf "%s" "$i" | awk -F '": ?["\[]' '{print $2}' | tr -d '"' | tr -d '[]')
         # If the current field name matches the one we're looking for, print the
         # value and break out of this loop
         if [ "$field_name" = "$1" ]; then
