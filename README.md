@@ -47,7 +47,7 @@ Command-line usage
 Run `gad` with no options or `gad -h` to view this usage info from the command line.
 
 ```
-Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-p KEYFILE] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
+Usage: gad [-h] [-x] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-p KEYFILE|-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
 
 -h: Print this usage info and exit
 -x: Use Gandi's legacy XML-RPC API
