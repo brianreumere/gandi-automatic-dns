@@ -41,14 +41,31 @@ To set up a crontab entry to run `gad` on a schedule, store your API key in the 
 
 If you have [issues with the `openssl s_client` command hanging](https://github.com/brianreumere/gandi-automatic-dns/issues/31), and you have access to the `timeout` utility from coreutils, you can precede the path to the `gad` command with something like `timeout -k 10s 60s` (to send a `TERM` signal after 60 seconds and a `KILL` signal 10 seconds later if it's still running).
 
-The v5/LiveDNS API [allows up to 1000 requests per minute](https://api.gandi.net/docs/reference/) and [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (`gad` makes a maximum of 5 API calls to update a single DNS record: 1 API call to get the active zonefile for the domain, 1 API call per record to check its accuracy, 1 API call to create a new version of the zonefile if needed, 1 API call per record to update or create it if needed, and 1 API call to activate the new version of the zonefile).
-
-See the next section for more information about command-line options.
+The v5/LiveDNS API [allows up to 1000 requests per minute](https://api.gandi.net/docs/reference/) and [the legacy API has a limit of 30 requests every 2 seconds, documented here](https://docs.gandi.net/en/reseller/faq/index.html), so you should be able to run `gad` more frequently than every 15 minutes (when no record updates are required, `gad` makes one API call per record, and one additional call when using the legacy API to get the active zone ID).
 
 Command-line usage
 ==================
 
-Run `gad` with no options or `gad -h` to view usage info.
+Run `gad` with no options or `gad -h` to view this usage info from the command line.
+
+```
+Usage: gad [-h] [-5] [-6] [-f] [-t] [-e] [-v] [-s] [-i EXT_IF] [-a APIKEY] [-l TTL] -d EXAMPLE.COM -r "RECORD-NAMES"
+
+-h: Print this usage info and exit
+-5: Use Gandi's new LiveDNS platform
+-6: Update AAAA record(s) instead of A record(s)
+-f: Force the creation of a new zonefile regardless of IP address or TTL discrepancy
+-t: On Gandi's legacy DNS platform, if a new version of the zonefile is created, don't activate it. On LiveDNS, just print the updates that would be made if this flag wasn't used.
+-e: Print debugging information to stdout
+-v: Print information to stdout even if an update isn't needed
+-s: Use stdin instead of OpenDNS to determine external IP address
+
+-i EXT_IF: The name of your external network interface (optional, if provided uses ifconfig instead of OpenDNS to determine external IP address
+-a APIKEY: Your PAT (for LiveDNS) or API key (for the legacy API) provided by Gandi (optional, loaded from the file ~/.gandiapi if not specified)
+-l TTL: Set a custom TTL on records (optional, and only supported on LiveDNS)
+-d EXAMPLE.COM: The domain name whose active zonefile will be updated (required)
+-r RECORD-NAMES: A space-separated list of the name(s) of the A or AAAA record(s) to update or create (required)
+```
 
 Function syntax
 ============
