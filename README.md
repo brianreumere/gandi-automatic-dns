@@ -10,7 +10,7 @@ If you are on Gandi's legacy DNS platform, your domain needs to be using a zone 
 
 If you are on Gandi's newer v5/LiveDNS platform, you do not need to perform these steps.
 
-[For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, [API keys are deprecated as of August 2023](https://api.gandi.net/docs/changelog/) in favor of personal access tokens (PATs). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions in the Domains section.
+[For Gandi's legacy platform, request an API key here](https://www.gandi.net/admin/apixml/). For the new LiveDNS platform, [API keys are deprecated](https://api.gandi.net/docs/changelog/) in favor of personal access tokens (PATs). Generate a PAT by selecting your organization from the [Organizations panel](https://admin.gandi.net/organizations/) and clicking button to create a token in the Personal Access Token (PAT) section. You should restrict the token to the domain name that you plan on updating with `gad`, and only select the `See and renew domain names` and `Manage domain name technical configurations` permissions in the Domains section.
 
 Requirements
 ============
