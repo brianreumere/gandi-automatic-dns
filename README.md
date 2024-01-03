@@ -1,6 +1,8 @@
 gad
 ===
 
+**This project is no longer under active development**, but I will do my best to address any bug reports. See [porkbun-automatic-dns](https://github.com/brianreumere/porkbun-automatic-dns) for its spiritual successor for a different domain/DNS provider. Thanks to everyone who has contributed by supporting issues and opening pull requests over the 11 years (!) since I started this project.
+
 This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in a Gandi.net zonefile. External IP address discovery is done via a network interface, [OpenDNS](http://www.opendns.com), or a custom command piped to standard input. The result is compared to the value in the active version of the zonefile of each record in `RECORD-NAMES`.
 
 Prerequisites
@@ -34,7 +36,7 @@ ln -s /home/brian/git/gandi-automatic-dns/gad /home/brian/bin/gad
 To set up a crontab entry to run `gad` on a schedule, store your API key in the `~/.gandiapi` file (run `chmod 600 ~/.gandiapi` to make sure no other users have permissions to this file), and then run `crontab -e` and add a line similar to the following (this example will run `gad` every 15 minutes and update the `@` and `www` records of the domain `example.net`):
 
 ```
-0,15,30,45 * * * * /home/brian/bin/gad -5 -i em0 -d example.net -r "@ www"
+0,15,30,45 * * * * /home/brian/bin/gad -i em0 -d example.net -r "@ www"
 ```
 
 If you have [issues with the `openssl s_client` command hanging](https://github.com/brianreumere/gandi-automatic-dns/issues/31), and you have access to the `timeout` utility from GNU coreutils, you can precede the path to the `gad` command with something like `timeout -k 10s 60s` (to send a `TERM` signal after 60 seconds and a `KILL` signal 10 seconds later if it's still running).
