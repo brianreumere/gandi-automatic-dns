@@ -1,7 +1,7 @@
 gad
 ===
 
-**This project is no longer under active development**, but I will do my best to address any bug reports. See [porkbun-automatic-dns](https://github.com/brianreumere/porkbun-automatic-dns) for its spiritual successor for a different domain/DNS provider. Thanks to everyone who has contributed by supporting issues and opening pull requests over the 11 years (!) since I started this project.
+**This project is no longer under active development**, but I will do my best to address any bug reports. See [porkbun-automatic-dns](https://github.com/brianreumere/porkbun-automatic-dns) for its spiritual successor for a different domain/DNS provider. Thanks to everyone who has contributed by reporting issues and opening pull requests over the 11 years (!) since I started this project.
 
 This script is intended to be used as a cron job to maintain the accuracy of multiple A or AAAA records in a Gandi.net zonefile. External IP address discovery is done via a network interface, [OpenDNS](http://www.opendns.com), or a custom command piped to standard input. The result is compared to the value in the active version of the zonefile of each record in `RECORD-NAMES`.
 
